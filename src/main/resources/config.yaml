@@ -1,0 +1,17 @@
+artifactDescription: Spring Boot API demo
+artifactId: petstore
+developerEmail: user@myenterprise.com
+developerName: George
+developerOrganization: myenterprise
+developerOrganizationUrl: https://www.myenterprise.com
+sourceFolder: src/main/java
+parentArtifactId: petstore
+parentGroupId: com.myenterprise
+parentVersion: 1.0-SNAPSHOT
+groupId: com.myenterprise.rest.v1
+modelPackage: com.myenterprise.rest.v1.model
+invokerPackage: com.myenterprise.rest.v1.invoker
+apiPackage: com.myenterprise.rest.v1.api
+serverPort: 8080
+title: Petstore API
+useBeanValidation: true
