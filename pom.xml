@@ -1,119 +1,156 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.5.3</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.myenterprise</groupId>
+	<artifactId>petstore</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>petstore</name>
+	<description>Spring Boot API demo</description>
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+	<properties>
+		<java.version>17</java.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
 
-    <groupId>com.myenterprise</groupId>
-    <artifactId>petstore</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-    </properties>
-    <dependencies>
-        <dependency>
-            <groupId>io.swagger.core.v3</groupId>
-            <artifactId>swagger-annotations</artifactId>
-            <version>2.2.31</version>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-            <version>3.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <version>3.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-            <version>3.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-            <version>1.18.38</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-            <version>3.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-ui</artifactId>
-            <version>1.7.0</version>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
 
-        <!-- Para javax.annotation y @Generated -->
-        <dependency>
-            <groupId>javax.annotation</groupId>
-            <artifactId>javax.annotation-api</artifactId>
-            <version>1.3.2</version>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
 
-        <!-- Para javax.servlet -->
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>4.0.1</version>
-            <scope>provided</scope>
-        </dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
 
-        <!-- Para Nullable (OpenAPI tools) -->
-        <dependency>
-            <groupId>org.openapitools</groupId>
-            <artifactId>jackson-databind-nullable</artifactId>
-            <version>0.2.6</version>
-        </dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.7.0</version>
+		</dependency>
 
-    </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.openapitools</groupId>
-                <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.2.0</version>
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/src/main/resources/api.yaml</inputSpec>
-                            <generatorName>spring</generatorName>
-                            <output>${project.build.directory}</output>
-                            <configOptions>
-                                <artifactDescription>Spring Boot API demo</artifactDescription>
-                                <artifactId>petstore</artifactId>
-                                <developerEmail>user@myenterprise.com</developerEmail>
-                                <developerName>George</developerName>
-                                <developerOrganization>myenterprise</developerOrganization>
-                                <developerOrganizationUrl>https://www.myenterprise.com</developerOrganizationUrl>
-                                <sourceFolder>src/main/java</sourceFolder>
-                                <parentArtifactId>petstore</parentArtifactId>
-                                <parentGroupId>com.myenterprise</parentGroupId>
-                                <parentVersion>1.0-SNAPSHOT</parentVersion>
-                                <groupId>com.myenterprise.rest.v1</groupId>
-                                <modelPackage>com.myenterprise.rest.v1.model</modelPackage>
-                                <invokerPackage>com.myenterprise.rest.v1.invoker</invokerPackage>
-                                <apiPackage>com.myenterprise.rest.v1.api</apiPackage>
-                                <configPackage>com.myenterprise.rest.v1.configuration</configPackage>
-                                <serverPort>8080</serverPort>
-                                <title>Petstore API</title>
-                                <useBeanValidation>true</useBeanValidation>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>1.3.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<scope>provided</scope>
+			<version>4.0.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.openapitools</groupId>
+			<artifactId>jackson-databind-nullable</artifactId>
+			<version>0.2.6</version>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>2.0.1.Final</version>
+		</dependency>
+
+		<!-- This requires of H2 database (embedded database), else this doesn't work -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-jpa</artifactId>
+			<version>3.5.1</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.openapitools</groupId>
+				<artifactId>openapi-generator-maven-plugin</artifactId>
+				<version>7.12.0</version>
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<inputSpec>${project.basedir}/src/main/resources/api.yaml</inputSpec>
+							<generatorName>spring</generatorName>
+							<output>${project.build.directory}</output>
+							<configOptions>
+								<artifactDescription>Spring Boot API demo</artifactDescription>
+								<artifactId>petstore</artifactId>
+								<developerEmail>user@myenterprise.com</developerEmail>
+								<developerName>George</developerName>
+								<developerOrganization>myenterprise</developerOrganization>
+								<developerOrganizationUrl>https://www.myenterprise.com</developerOrganizationUrl>
+								<sourceFolder>src/main/java</sourceFolder>
+								<parentArtifactId>petstore</parentArtifactId>
+								<parentGroupId>com.myenterprise</parentGroupId>
+								<parentVersion>1.0-SNAPSHOT</parentVersion>
+								<groupId>com.myenterprise.rest.v1</groupId>
+								<modelPackage>com.myenterprise.rest.v1.model</modelPackage>
+								<invokerPackage>com.myenterprise.rest.v1.invoker</invokerPackage>
+								<useSpringBoot3>true</useSpringBoot3>
+								<apiPackage>com.myenterprise.rest.v1.api</apiPackage>
+								<configPackage>com.myenterprise.rest.v1.configuration</configPackage>
+								<serverPort>8080</serverPort>
+								<title>Petstore API</title>
+								<delegatePattern>true</delegatePattern>
+								<useJakartaEe>true</useJakartaEe>
+								<documentationProvider>springdoc</documentationProvider>
+								<useSwaggerUI>true</useSwaggerUI>
+								<useBeanValidation>true</useBeanValidation>
+							</configOptions>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
 </project>
