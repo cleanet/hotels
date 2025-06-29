@@ -110,7 +110,7 @@
 			<plugin>
 				<groupId>org.openapitools</groupId>
 				<artifactId>openapi-generator-maven-plugin</artifactId>
-				<version>7.12.0</version>
+				<version>7.14.0</version>
 				<executions>
 					<execution>
 						<phase>generate-sources</phase>
@@ -121,31 +121,7 @@
 							<inputSpec>${project.basedir}/src/main/resources/api.yaml</inputSpec>
 							<generatorName>spring</generatorName>
 							<output>${project.build.directory}</output>
-							<configOptions>
-								<artifactDescription>Spring Boot API demo</artifactDescription>
-								<artifactId>petstore</artifactId>
-								<developerEmail>user@myenterprise.com</developerEmail>
-								<developerName>George</developerName>
-								<developerOrganization>myenterprise</developerOrganization>
-								<developerOrganizationUrl>https://www.myenterprise.com</developerOrganizationUrl>
-								<sourceFolder>src/main/java</sourceFolder>
-								<parentArtifactId>petstore</parentArtifactId>
-								<parentGroupId>com.myenterprise</parentGroupId>
-								<parentVersion>1.0-SNAPSHOT</parentVersion>
-								<groupId>com.myenterprise.rest.v1</groupId>
-								<modelPackage>com.myenterprise.rest.v1.model</modelPackage>
-								<invokerPackage>com.myenterprise.rest.v1.invoker</invokerPackage>
-								<useSpringBoot3>true</useSpringBoot3>
-								<apiPackage>com.myenterprise.rest.v1.api</apiPackage>
-								<configPackage>com.myenterprise.rest.v1.configuration</configPackage>
-								<serverPort>8080</serverPort>
-								<title>Petstore API</title>
-								<delegatePattern>true</delegatePattern>
-								<useJakartaEe>true</useJakartaEe>
-								<documentationProvider>springdoc</documentationProvider>
-								<useSwaggerUI>true</useSwaggerUI>
-								<useBeanValidation>true</useBeanValidation>
-							</configOptions>
+							<configurationFile>${project.basedir}/src/main/resources/config.yaml</configurationFile>
 						</configuration>
 					</execution>
 				</executions>
