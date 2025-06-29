@@ -1,0 +1,24 @@
+artifactDescription: Spring Boot API demo
+artifactId: petstore
+developerEmail: user@myenterprise.com
+developerName: George
+developerOrganization: myenterprise
+developerOrganizationUrl: https://www.myenterprise.com
+sourceFolder: src/main/java
+parentArtifactId: petstore
+parentGroupId: com.myenterprise
+parentVersion: 1.0-SNAPSHOT
+groupId: com.myenterprise.rest.v1
+modelPackage: com.myenterprise.rest.v1.model
+invokerPackage: com.myenterprise.rest.v1
+useSpringBoot3: true
+apiPackage: com.myenterprise.rest.v1.api
+configPackage: com.myenterprise.rest.v1.configuration
+serverPort: 8081
+title: Petstore API
+delegatePattern: true # Create the interface Delegator
+useBeanValidation: true
+templateDirectory: src/main/resources/templates
+# Override/add custom files at output generated
+files:
+  src/main/resources/application.yml: {}
