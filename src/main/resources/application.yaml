@@ -1,0 +1,11 @@
+spring:
+  security:
+    user:
+      name: admin
+      password: 1234
+springdoc:
+  swagger-ui:
+    enabled: true
+logging:
+  level:
+    org.springframework: DEBUG
