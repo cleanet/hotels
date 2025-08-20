@@ -1,24 +1,35 @@
-artifactDescription: Spring Boot API demo
-artifactId: petstore
+# Additional information
+title: Hotels API
 developerEmail: user@myenterprise.com
 developerName: George
 developerOrganization: myenterprise
 developerOrganizationUrl: https://www.myenterprise.com
+
+# path where will be the code generated
 sourceFolder: src/main/java
-parentArtifactId: petstore
+
+# parent package
+parentArtifactId: hotels
 parentGroupId: com.myenterprise
 parentVersion: 1.0-SNAPSHOT
+
+# information of package generated
 groupId: com.myenterprise.rest.v1
+artifactId: hotels
+artifactDescription: Spring Boot API demo
+
+# Configuration of structure of code generated
+basePackage: com.myenterprise.rest
 modelPackage: com.myenterprise.rest.v1.model
 invokerPackage: com.myenterprise.rest.v1
-useSpringBoot3: true
 apiPackage: com.myenterprise.rest.v1.api
 configPackage: com.myenterprise.rest.v1.configuration
+# Create the interface Delegator for use it in the service classes as implementation. Implementing the Delegate Pattern
+delegatePattern: true
+
+# Use Spring Boot 3 and install springdoc
+useSpringBoot3: true
 documentationProvider: springdoc
-title: Petstore API
-delegatePattern: true # Create the interface Delegator
-useBeanValidation: true
-templateDirectory: src/main/resources/templates
-# Override/add custom files at output generated
-files:
-  src/main/resources/application.yaml: {}
+
+# In HomeController, redirect to Swagger UI.
+useSwaggerUI: true

@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.myenterprise</groupId>
-	<artifactId>petstore</artifactId>
+	<artifactId>hotels</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>petstore</name>
+	<name>hotels</name>
 	<description>Spring Boot API demo</description>
 	<url/>
 	<licenses>
@@ -41,14 +41,10 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Spring Security -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
 		<dependency>
@@ -57,13 +53,50 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Spring doc. Install swagger-ui and api-docs !-->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.8.9</version>
 		</dependency>
 
+		<!-- For solve the CVE-2025-48924 in springdoc-openapi-starter-webmvc-ui-->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.18.0</version>
+		</dependency>
 
+		<!-- Enable Rate Limiting response -->
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j_jdk17-core</artifactId>
+			<version>8.14.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.giffing.bucket4j.spring.boot.starter</groupId>
+			<artifactId>bucket4j-spring-boot-starter</artifactId>
+			<version>0.13.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>javax.cache</groupId>
+			<artifactId>cache-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+			<version>3.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>jcache</artifactId>
+			<version>3.2.2</version>
+		</dependency>
+		<!---->
 		<dependency>
 			<groupId>javax.annotation</groupId>
 			<artifactId>javax.annotation-api</artifactId>
@@ -100,6 +133,24 @@
 			<artifactId>spring-data-jpa</artifactId>
 			<version>3.5.1</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jetbrains</groupId>
+			<artifactId>annotations</artifactId>
+			<version>13.0</version>
+		</dependency>
+
+		<!-- OWASP Java HTML sanitizer https://www.baeldung.com/java-sanitize-html-prevent-xss-attacks -->
+		<dependency>
+			<groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
+			<artifactId>owasp-java-html-sanitizer</artifactId>
+			<version>20240325.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -114,6 +165,7 @@
 				<version>7.14.0</version>
 				<executions>
 					<execution>
+						<id>spring</id>
 						<phase>generate-sources</phase>
 						<goals>
 							<goal>generate</goal>
@@ -125,9 +177,38 @@
 							<configurationFile>${project.basedir}/src/main/resources/config.yaml</configurationFile>
 						</configuration>
 					</execution>
+					<!-- Generate postman collection JSON -->
+					<execution>
+						<id>postman</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<inputSpec>${project.basedir}/src/main/resources/api.yaml</inputSpec>
+							<generatorName>postman-collection</generatorName>
+							<output>${project.build.directory}</output>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
+			<!-- Plugins for generate maven site -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>4.0.0-M16</version>
+			</plugin>
+			<!---->
 		</plugins>
 	</build>
-
+	<!-- Generating JavaDoc in Maven Site ref: https://www.oreilly.com/library/view/apache-maven-cookbook/9781785286124/ch07s03.html -->
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.11.2</version>
+			</plugin>
+		</plugins>
+	</reporting>
 </project>
