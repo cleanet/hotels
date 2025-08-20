@@ -1,8 +1,39 @@
 spring:
-  security:
-    user:
-      name: admin
-      password: 1234
-springdoc:
-  swagger-ui:
-    enabled: true
+  datasource:
+    url: jdbc:h2:file:./database
+    username: sa
+    password: sa
+    driverClassName: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: true
+  cache:
+    cache-names:
+      - rate-limit-buckets
+
+logging:
+  sanitizerHTML:
+    message: "The field value '{fieldName}' in '{modelClassName}' model, of controller method '{controllerClassName}.{controllerMethodName}()' was sanitized. The elements '{rejectedTags}' and attributes '{rejectedAttributes}' was rejected preventing XSS Attack"
+cors:
+  allowed-origins: 'http://localhost:8080'
+  allowed-headers: '*'
+  allowed-mapping: '/**'
+
+bucket4j:
+  enabled: true
+  filters:
+    - cache-name: rate-limit-buckets
+      url: /api/.*
+      strategy: first
+      http-response-body: "{ \"error\": \"HOTELS-ERROR-00429\", \"message\": \"Too many Requests. You have exhausted your API Request Quota\" }"
+      rate-limits:
+        - cache-key: "getRemoteAddr()"
+          bandwidths:
+            - capacity: 5
+              time: 1
+              unit: minutes
