@@ -1,0 +1,48 @@
+Error:
+  type: object
+  properties:
+    error:
+      type: string
+    message:
+      type: string
+  required:
+    - error
+    - message
+Hotel:
+  allOf:
+    - type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+        - id
+    - $ref: 'schemas.yaml#/HotelInput'
+HotelInput:
+  type: object
+  properties:
+    name:
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      type: string
+      example: Hotel Continental
+    description:
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      type: string
+      example: This is hotel is the best hotel of the world
+    address:
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      type: string
+      example: Street Falsa 123
+    city:
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      type: string
+      example: Madrid
+    rating:
+      type: number
+      format: float
+      example: 4.5
+    has_wifi:
+      type: boolean
+      example: true
+  required: [ name, address, city, rating, has_wifi ]

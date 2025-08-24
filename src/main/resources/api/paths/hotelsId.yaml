@@ -1,0 +1,74 @@
+get:
+  operationId: getHotel
+  summary: Get hotel by UUID
+  tags: [Hotels]
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Hotel details
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/Hotel'
+    '500':
+      $ref: "../components/responses.yaml#/500Response"
+    '429':
+      $ref: "../components/responses.yaml#/429Response"
+
+put:
+  operationId: updateHotel
+  summary: Update a hotel by ID
+  tags: [Hotels]
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas.yaml#/HotelInput'
+  responses:
+    '200':
+      description: Hotel updated
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/Hotel'
+    '404':
+      $ref: "../components/responses.yaml#/404Response"
+    '500':
+      $ref: "../components/responses.yaml#/500Response"
+    '429':
+      $ref: "../components/responses.yaml#/429Response"
+
+delete:
+  operationId: deleteHotel
+  summary: Delete a hotel by ID
+  tags: [Hotels]
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '204':
+      description: Hotel deleted successfully
+    '404':
+      $ref: "../components/responses.yaml#/404Response"
+    '500':
+      $ref: "../components/responses.yaml#/500Response"
+    '429':
+      $ref: "../components/responses.yaml#/429Response"

@@ -1,0 +1,33 @@
+404Response:
+  description: Hotel not found
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      examples:
+        404:
+          value:
+            error: HOTELS-ERROR-00404
+            message: Hotel not found
+500Response:
+  description: Error unexpected
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      examples:
+        500:
+          value:
+            error: HOTELS-ERROR-00500
+            message: Error unexpected
+429Response:
+  description: Too many requests
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      examples:
+        429:
+          value:
+            error: HOTELS-ERROR-00429
+            message: Too many Requests. You have exhausted your API Request Quota

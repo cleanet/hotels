@@ -1,0 +1,39 @@
+get:
+  operationId: getHotels
+  summary: Get all hotels
+  tags: [Hotels]
+  responses:
+    '200':
+      description: Get all hotels
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../components/schemas.yaml#/Hotel'
+    '500':
+      $ref: "../components/responses.yaml#/500Response"
+    '429':
+      $ref: "../components/responses.yaml#/429Response"
+
+post:
+  operationId: createHotel
+  summary: Create new hotel
+  tags: [Hotels]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas.yaml#/HotelInput'
+  responses:
+    '201':
+      description: Hotel created
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas.yaml#/Hotel'
+    '500':
+      $ref: "../components/responses.yaml#/500Response"
+    '429':
+      $ref: "../components/responses.yaml#/429Response"

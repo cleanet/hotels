@@ -1,0 +1,5 @@
+XRateLimitRemaining:
+  description: 'This header informs number request before of reject'
+  example: 100
+  schema:
+    type: integer
