@@ -16,6 +16,10 @@ Hotel:
           type: string
           format: uuid
           readOnly: true
+        name:
+          x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+          type: string
+          example: Hotel Continental
       required:
         - id
     - $ref: 'schemas.yaml#/HotelInput'
@@ -23,7 +27,6 @@ HotelInput:
   type: object
   properties:
     name:
-      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
       type: string
       example: Hotel Continental
     description:

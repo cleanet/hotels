@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<pathOpenAPI>${project.basedir}/src/main/resources/api/api.yaml</pathOpenAPI>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -171,7 +172,7 @@
 							<goal>generate</goal>
 						</goals>
 						<configuration>
-							<inputSpec>${project.basedir}/src/main/resources/api/api.yaml</inputSpec>
+							<inputSpec>${pathOpenAPI}</inputSpec>
 							<generatorName>spring</generatorName>
 							<output>${project.build.directory}</output>
 							<configurationFile>${project.basedir}/src/main/resources/config.yaml</configurationFile>
@@ -185,7 +186,7 @@
 							<goal>generate</goal>
 						</goals>
 						<configuration>
-							<inputSpec>${project.basedir}/src/main/resources/api.yaml</inputSpec>
+							<inputSpec>${pathOpenAPI}</inputSpec>
 							<generatorName>postman-collection</generatorName>
 							<output>${project.build.directory}</output>
 						</configuration>
