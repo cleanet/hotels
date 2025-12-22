@@ -24,12 +24,15 @@
 package com.myenterprise.rest.v1.entity;
 
 import com.myenterprise.rest.v1.model.Hotel;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import org.springframework.lang.Nullable;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -40,7 +43,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "hotels")
-public class HotelsEntity extends Hotel {
+public class HotelsEntity {
     /**
      * Compares this HotelsEntity to the specified object. The comparison
      * is based on all fields including id, name, description, address, city,
@@ -49,7 +52,7 @@ public class HotelsEntity extends Hotel {
      * @param hotel The object to compare with.
      * @return true if the given object represents a HotelsEntity equivalent to this HotelsEntity, false otherwise.
      */
-    @Override
+    
     public boolean equals(Object hotel) {
         if (hotel == null || getClass() != hotel.getClass()) return false;
         if (!super.equals(hotel)) return false;
@@ -70,7 +73,7 @@ public class HotelsEntity extends Hotel {
      *
      * @return a hash code value for this object.
      */
-    @Override
+    
     public int hashCode() {
         return Objects.hash(super.hashCode(), id, name, description, address, city, rating, hasWifi);
     }
@@ -114,12 +117,22 @@ public class HotelsEntity extends Hotel {
      */
     private Boolean hasWifi;
 
+
+    /**
+     * Indicates the facilities of hotel
+     */
+    @OneToMany(
+            mappedBy = "hotel",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<FacilityEntity> facilities = new ArrayList<>();
+
     /**
      * Retrieves the name of the hotel.
      *
      * @return The hotel's name.
      */
-    @Override
     public String getName() {
         return name;
     }
@@ -129,7 +142,6 @@ public class HotelsEntity extends Hotel {
      *
      * @param name The new name for the hotel.
      */
-    @Override
     public void setName(String name) {
         this.name = name;
     }
@@ -140,7 +152,6 @@ public class HotelsEntity extends Hotel {
      * @return The hotel's description.
      */
     @Nullable
-    @Override
     public String getDescription() {
         return description;
     }
@@ -150,7 +161,6 @@ public class HotelsEntity extends Hotel {
      *
      * @param description The new description for the hotel.
      */
-    @Override
     public void setDescription(@Nullable String description) {
         this.description = description;
     }
@@ -160,7 +170,6 @@ public class HotelsEntity extends Hotel {
      *
      * @return The hotel's address.
      */
-    @Override
     public String getAddress() {
         return address;
     }
@@ -170,7 +179,6 @@ public class HotelsEntity extends Hotel {
      *
      * @param address The new address for the hotel.
      */
-    @Override
     public void setAddress(String address) {
         this.address = address;
     }
@@ -180,7 +188,6 @@ public class HotelsEntity extends Hotel {
      *
      * @return The hotel's city.
      */
-    @Override
     public String getCity() {
         return city;
     }
@@ -190,7 +197,6 @@ public class HotelsEntity extends Hotel {
      *
      * @param city The new city for the hotel.
      */
-    @Override
     public void setCity(String city) {
         this.city = city;
     }
@@ -200,7 +206,6 @@ public class HotelsEntity extends Hotel {
      *
      * @return The hotel's rating.
      */
-    @Override
     public Float getRating() {
         return rating;
     }
@@ -210,7 +215,6 @@ public class HotelsEntity extends Hotel {
      *
      * @param rating The new rating for the hotel.
      */
-    @Override
     public void setRating(Float rating) {
         this.rating = rating;
     }
@@ -220,7 +224,6 @@ public class HotelsEntity extends Hotel {
      *
      * @return The hotel's Wi-Fi availability.
      */
-    @Override
     public Boolean getHasWifi() {
         return hasWifi;
     }
@@ -230,7 +233,6 @@ public class HotelsEntity extends Hotel {
      *
      * @param hasWifi The new Wi-Fi availability status.
      */
-    @Override
     public void setHasWifi(Boolean hasWifi) {
         this.hasWifi = hasWifi;
     }
@@ -240,8 +242,28 @@ public class HotelsEntity extends Hotel {
      *
      * @return The hotel's ID.
      */
-    @Override
     public UUID getId() {
         return id;
+    }
+
+
+    /**
+     * Retrieves the facilities list of the hotel.
+     *
+     * @return The hotel's facilities list.
+     */
+    
+    public List<FacilityEntity> getFacilities() {
+        return facilities;
+    }
+
+
+    /**
+     * Sets the facilities list of the hotel
+     *
+     * @param facilities The new facilities list.
+     */
+    public void setFacilities(List<FacilityEntity> facilities) {
+        this.facilities = facilities;
     }
 }

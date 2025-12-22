@@ -27,9 +27,8 @@ import com.myenterprise.rest.v1.configuration.ConfigurationPropertiesReader;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
-import org.springframework.http.MediaType;
-import org.springframework.http.server.ServerHttpRequest;
-import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.HttpInputMessage;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.stereotype.Component;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -37,25 +36,26 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Objects;
 
 import com.myenterprise.rest.annotation.SanitizeHTML;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdvice;
 
 import static com.myenterprise.rest.component.CKEditorSanitizerPolicy.CKEDITOR_POLICY;
 
 /**
- * Advice that sanitizes HTML content in response bodies before they are written
- * to the HTTP response.
+ * Advice that sanitizes HTML content in request bodies after they are read
+ * and before they are passed to controller methods.
  * <p>
- * This component intercepts controller responses and applies HTML sanitization
+ * This component intercepts request bodies and applies HTML sanitization
  * to String properties annotated with {@link SanitizeHTML}.
  */
 @Component
 @ControllerAdvice
-public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
+public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
 
     /**
      * Reader used to access application configuration properties.
@@ -73,7 +73,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     private Method setter;
 
     /**
-     * Current response body being processed.
+     * Current request body being processed.
      */
     private Object body;
 
@@ -83,9 +83,9 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     private PropertyDescriptor propertyDescriptor;
 
     /**
-     * Superclass of the response body object being inspected.
+     * Class of the request body object being inspected.
      */
-    private Class<?> argumentSuperClass;
+    private Class<?> argumentClass;
 
     /**
      * Field corresponding to the current property being inspected.
@@ -93,18 +93,18 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     private Field field;
 
     /**
-     * Controller method that produced the response.
+     * Controller method that will receive the request body.
      */
     private Method signature;
 
     /**
-     * Creates a new {@code SanitizeHTMLResponse} using the provided
+     * Creates a new {@code SanitizeHTMLRequestBody} using the provided
      * configuration properties reader.
      *
      * @param propertiesConfiguration configuration properties reader
      */
     @Autowired
-    public SanitizeHTMLResponse(ConfigurationPropertiesReader propertiesConfiguration) {
+    public SanitizeHTMLRequestBody(ConfigurationPropertiesReader propertiesConfiguration) {
         this.propertiesConfiguration = propertiesConfiguration;
     }
 
@@ -127,7 +127,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     private void validateField()
             throws NoSuchFieldException, IllegalAccessException, InvocationTargetException {
 
-        this.field = this.argumentSuperClass.getDeclaredField(propertyDescriptor.getName());
+        this.field = this.argumentClass.getDeclaredField(propertyDescriptor.getName());
 
         boolean isGetterNull = Objects.isNull(this.getter);
         boolean isSetterNull = Objects.isNull(this.setter);
@@ -156,7 +156,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         SanitizerHTMLLoggerConfiguration loggerConfiguration =
                 new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration)
                         .setFieldName(this.field.getName())
-                        .setModelClassName(this.argumentSuperClass.getName())
+                        .setModelClassName(this.argumentClass.getName())
                         .setControllerClassName(this.signature.getDeclaringClass().getName())
                         .setControllerMethodName(this.signature.getName());
 
@@ -166,7 +166,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         String sanitizedValue = CKEDITOR_POLICY.sanitize(
                 originalValue,
                 sanitizerHTMLListener,
-                SanitizeHTMLResponse.class
+                SanitizeHTMLRequestBody.class
         );
 
         sanitizerHTMLListener.register();
@@ -174,7 +174,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     }
 
     /**
-     * Iterates over the properties of the current response object and
+     * Iterates over the properties of the current request body object and
      * sanitizes all eligible fields.
      *
      * @throws IntrospectionException    if an error occurs during JavaBeans introspection
@@ -185,7 +185,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
             throws IntrospectionException, IllegalAccessException, InvocationTargetException {
 
         for (PropertyDescriptor pd :
-                Introspector.getBeanInfo(this.argumentSuperClass).getPropertyDescriptors()) {
+                Introspector.getBeanInfo(this.argumentClass).getPropertyDescriptors()) {
 
             this.propertyDescriptor = pd;
             this.getter = pd.getReadMethod();
@@ -207,20 +207,109 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * The advice is applied only to controller classes whose package name
      * matches {@code com.myenterprise.rest.(...).api(...)}.
      *
-     * @param returnType    controller method return type
-     * @param converterType selected HTTP message converter
-     * @return {@code true} if the response body should be intercepted
+     * @param methodParameter controller method parameter
+     * @param targetType      target Java type
+     * @param converterType  selected HTTP message converter
+     * @return {@code true} if the request body should be intercepted
      */
     @Override
     public boolean supports(
-            MethodParameter returnType,
-            @NotNull Class converterType
+            @NotNull MethodParameter methodParameter,
+            @NotNull Type targetType,
+            @NotNull Class<? extends HttpMessageConverter<?>> converterType
     ) {
-        return returnType
+        return methodParameter
                 .getContainingClass()
                 .getPackage()
                 .getName()
                 .matches("com.myenterprise.rest.(.*).api(.*)");
+    }
+
+    /**
+     * Invoked before the HTTP request body is read.
+     * <p>
+     * This implementation does not modify the input message.
+     *
+     * @return the original {@link HttpInputMessage}
+     */
+    @NotNull
+    @Override
+    public HttpInputMessage beforeBodyRead(
+            @NotNull HttpInputMessage inputMessage,
+            @NotNull MethodParameter parameter,
+            @NotNull Type targetType,
+            @NotNull Class<? extends HttpMessageConverter<?>> converterType
+    ) {
+        return inputMessage;
+    }
+
+    /**
+     * Invoked after the HTTP request body has been read and converted.
+     * <p>
+     * If the body is a POJO, its properties are inspected and sanitized
+     * before being passed to the controller method.
+     * If the body is an {@link Iterable}, each element is processed individually.
+     *
+     * @return sanitized request body
+     */
+    @NotNull
+    @Override
+    public Object afterBodyRead(
+            @NotNull Object body,
+            @NotNull HttpInputMessage inputMessage,
+            @NotNull MethodParameter parameter,
+            @NotNull Type targetType,
+            @NotNull Class<? extends HttpMessageConverter<?>> converterType
+    ) {
+        this.body = body;
+
+        if (isPojo(body)) {
+            this.argumentClass = body.getClass();
+            this.signature = parameter.getMethod();
+            try {
+                this.iteratePropertiesOfAArgument();
+            } catch (IntrospectionException | IllegalAccessException | InvocationTargetException error) {
+                throw new RuntimeException(error);
+            }
+        } else if (body instanceof Iterable<?> collection) {
+            ArrayList<Object> result = new ArrayList<>();
+            collection.forEach(item -> {
+                if (item == null) return;
+
+                this.body = item;
+                this.argumentClass = item.getClass().getSuperclass();
+                this.signature = parameter.getMethod();
+
+                try {
+                    this.iteratePropertiesOfAArgument();
+                } catch (IntrospectionException | IllegalAccessException | InvocationTargetException error) {
+                    throw new RuntimeException(error);
+                }
+
+                result.add(this.body);
+            });
+            this.body = result;
+        }
+
+        return this.body;
+    }
+
+    /**
+     * Invoked when the request body is empty.
+     * <p>
+     * This implementation does not perform any processing.
+     *
+     * @return the original body
+     */
+    @Override
+    public Object handleEmptyBody(
+            Object body,
+            @NotNull HttpInputMessage inputMessage,
+            @NotNull MethodParameter parameter,
+            @NotNull Type targetType,
+            @NotNull Class<? extends HttpMessageConverter<?>> converterType
+    ) {
+        return null;
     }
 
     /**
@@ -240,63 +329,5 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
                 object instanceof byte[] ||
                 object instanceof Iterable ||
                 object.getClass().isPrimitive());
-    }
-
-    /**
-     * Intercepts the response body before it is written to the HTTP response.
-     * <p>
-     * If the body is a POJO, its properties are inspected and sanitized.
-     * If the body is an {@link Iterable}, each element is processed individually.
-     *
-     * @param body                  response body
-     * @param returnType            controller method return type
-     * @param selectedContentType   selected response content type
-     * @param selectedConverterType selected HTTP message converter
-     * @param request               current HTTP request
-     * @param response              current HTTP response
-     * @return sanitized response body
-     */
-    @Override
-    public Object beforeBodyWrite(
-            Object body,
-            @NotNull MethodParameter returnType,
-            @NotNull MediaType selectedContentType,
-            @NotNull Class selectedConverterType,
-            @NotNull ServerHttpRequest request,
-            @NotNull ServerHttpResponse response
-    ) {
-        if (body == null) return null;
-
-        this.body = body;
-
-        if (isPojo(body)) {
-            this.argumentSuperClass = body.getClass().getSuperclass();
-            this.signature = returnType.getMethod();
-            try {
-                this.iteratePropertiesOfAArgument();
-            } catch (IntrospectionException | IllegalAccessException | InvocationTargetException error) {
-                throw new RuntimeException(error);
-            }
-        } else if (body instanceof Iterable<?> collection) {
-            ArrayList<Object> result = new ArrayList<>();
-            collection.forEach(item -> {
-                if (item == null) return;
-
-                this.body = item;
-                this.argumentSuperClass = item.getClass().getSuperclass();
-                this.signature = returnType.getMethod();
-
-                try {
-                    this.iteratePropertiesOfAArgument();
-                } catch (IntrospectionException | IllegalAccessException | InvocationTargetException error) {
-                    throw new RuntimeException(error);
-                }
-
-                result.add(this.body);
-            });
-            this.body = result;
-        }
-
-        return this.body;
     }
 }

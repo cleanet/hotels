@@ -48,4 +48,24 @@ HotelInput:
     has_wifi:
       type: boolean
       example: true
-  required: [ name, address, city, rating, has_wifi ]
+    facilities:
+      type: array
+      items:
+        $ref: 'schemas.yaml#/Facility'
+  required: [ name, address, city, rating, has_wifi, facilities, description ]
+
+Facility:
+  type: object
+  properties:
+    type:
+      type: string
+      example: restaurant
+      enum:
+        - restaurant
+        - cinema
+        - swimming pool
+    shortDescription:
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      type: string
+      example: The best restaurant of hotel
+  required: [type, shortDescription]

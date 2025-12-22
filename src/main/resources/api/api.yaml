@@ -24,6 +24,8 @@ components:
       $ref: components/schemas.yaml#/Error
     HotelInput:
       $ref: components/schemas.yaml#/HotelInput
+    Facility:
+      $ref: components/schemas.yaml#/Facility
   responses:
     404Response:
       $ref: components/responses.yaml#/404Response

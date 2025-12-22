@@ -25,6 +25,7 @@ package com.myenterprise.rest.v1.service;
 
 import com.myenterprise.rest.utils.ResponseUtils;
 import com.myenterprise.rest.v1.entity.HotelsEntity;
+import com.myenterprise.rest.v1.mapper.HotelMapper;
 import com.myenterprise.rest.v1.model.Hotel;
 import com.myenterprise.rest.v1.model.HotelInput;
 import com.myenterprise.rest.v1.repository.HotelsRepository;
@@ -54,13 +55,16 @@ public class HotelsService {
      */
     private final HotelsRepository hotelsRepository;
 
+    private final HotelMapper hotelMapper;
+
     /**
      * Constructs the {@code HotelsService} with a {@code HotelsRepository} dependency.
      *
      * @param hotelsRepository The repository for hotel data access.
      */
     @Autowired
-    public HotelsService(HotelsRepository hotelsRepository){
+    public HotelsService(HotelsRepository hotelsRepository, HotelMapper hotelMapper){
+        this.hotelMapper = hotelMapper;
         this.hotelsRepository = hotelsRepository;
     }
 
@@ -151,17 +155,15 @@ public class HotelsService {
      */
     public ResponseEntity<Hotel> save(@NotNull HotelInput hotelInput){
         try{
-            HotelsEntity hotel = new HotelsEntity();
-            hotel.setName(hotelInput.getName());
-            hotel.setDescription(hotelInput.getDescription());
-            hotel.setAddress(hotelInput.getAddress());
-            hotel.setCity(hotelInput.getCity());
-            hotel.setRating(hotelInput.getRating());
-            hotel.setHasWifi(hotelInput.getHasWifi());
+            HotelsEntity hotel = hotelMapper.toEntity(hotelInput);
+            hotel.getFacilities().forEach(facility -> {
+                facility.setHotel(hotel);
+            });
             HotelsEntity hotelSaved = hotelsRepository.save(hotel);
-            Hotel hotelSavedInDB = hotelsRepository.findById(hotelSaved.getId()).map(Hotel.class::cast).orElseThrow();
-            return new ResponseEntity<>(hotelSavedInDB,HttpStatus.CREATED);
+            Hotel response = hotelMapper.toModel(hotelSaved);
+            return new ResponseEntity<>(response,HttpStatus.CREATED);
         } catch ( Exception error ){
+            error.printStackTrace();
             return ResponseUtils.internalErrorResponse();
         }
     }
