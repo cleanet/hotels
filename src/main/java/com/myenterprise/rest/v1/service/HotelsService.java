@@ -24,7 +24,9 @@
 package com.myenterprise.rest.v1.service;
 
 import com.myenterprise.rest.utils.ResponseUtils;
+import com.myenterprise.rest.v1.entity.FacilityEntity;
 import com.myenterprise.rest.v1.entity.HotelsEntity;
+import com.myenterprise.rest.v1.mapper.FacilityMapper;
 import com.myenterprise.rest.v1.mapper.HotelMapper;
 import com.myenterprise.rest.v1.model.Hotel;
 import com.myenterprise.rest.v1.model.HotelInput;
@@ -57,15 +59,18 @@ public class HotelsService {
 
     private final HotelMapper hotelMapper;
 
+    private final FacilityMapper facilityMapper;
+
     /**
      * Constructs the {@code HotelsService} with a {@code HotelsRepository} dependency.
      *
      * @param hotelsRepository The repository for hotel data access.
      */
     @Autowired
-    public HotelsService(HotelsRepository hotelsRepository, HotelMapper hotelMapper){
+    public HotelsService(HotelsRepository hotelsRepository, HotelMapper hotelMapper, FacilityMapper facilityMapper){
         this.hotelMapper = hotelMapper;
         this.hotelsRepository = hotelsRepository;
+        this.facilityMapper = facilityMapper;
     }
 
     /**
@@ -86,9 +91,15 @@ public class HotelsService {
             hotel.setCity(hotelInput.getCity());
             hotel.setRating(hotelInput.getRating());
             hotel.setHasWifi(hotelInput.getHasWifi());
+            hotel.getFacilities().clear();
+            hotelInput.getFacilities().forEach(facility -> {
+                FacilityEntity facilityEntity = facilityMapper.toEntity(facility);
+                facilityEntity.setHotel(hotel);
+                hotel.getFacilities().add(facilityEntity);
+            });
             HotelsEntity hotelSaved = hotelsRepository.save(hotel);
-            Hotel hotelSavedInDB = hotelsRepository.findById(hotelSaved.getId()).map(Hotel.class::cast).orElseThrow();
-            return new ResponseEntity<>(hotelSavedInDB, HttpStatus.OK);
+            Hotel response = hotelMapper.toModel(hotelSaved);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch ( Exception error ){
             return ResponseUtils.internalErrorResponse();
         }
