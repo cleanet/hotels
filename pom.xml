@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.myenterprise</groupId>
 	<artifactId>hotels</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.1.0</version>
 	<name>hotels</name>
 	<description>Spring Boot API demo</description>
 	<url/>
