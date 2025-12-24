@@ -101,6 +101,7 @@ public class HotelsService {
             Hotel response = hotelMapper.toModel(hotelSaved);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch ( Exception error ){
+            error.printStackTrace();
             return ResponseUtils.internalErrorResponse();
         }
     }
@@ -115,9 +116,10 @@ public class HotelsService {
     public ResponseEntity<Hotel> find( UUID id ){
         try{
             if (hotelsRepository.findById(id).isEmpty()) return ResponseUtils.notFoundResponse();
-            Hotel hotel = hotelsRepository.findById(id).map(Hotel.class::cast).orElseThrow();
+            Hotel hotel = hotelMapper.toModel(hotelsRepository.findById(id).get());
             return new ResponseEntity<>(hotel, HttpStatus.OK);
         } catch ( Exception error ){
+            error.printStackTrace();
             return ResponseUtils.internalErrorResponse();
         }
     }
@@ -130,12 +132,12 @@ public class HotelsService {
      */
     public ResponseEntity<List<Hotel>> findAll(){
         try {
-            List<Hotel> hotels = StreamSupport
+            List<HotelsEntity> hotels = StreamSupport
                     .stream(hotelsRepository.findAll().spliterator(), false)
-                    .map(Hotel.class::cast)
                     .toList();
-            return new ResponseEntity<>(hotels, HttpStatus.OK);
+            return new ResponseEntity<>(hotelMapper.toModel(hotels), HttpStatus.OK);
         } catch ( Exception error ){
+            error.printStackTrace();
             return ResponseUtils.internalErrorResponse();
         }
     }
@@ -153,6 +155,7 @@ public class HotelsService {
             hotelsRepository.deleteById(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch ( Exception error ){
+            error.printStackTrace();
             return ResponseUtils.internalErrorResponse();
         }
     }
