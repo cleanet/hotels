@@ -21,10 +21,13 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
+// 20ms~40ms
 package com.myenterprise.rest.component;
 
 import com.myenterprise.rest.v1.configuration.ConfigurationPropertiesReader;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -32,11 +35,9 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import java.beans.IntrospectionException;
-import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -58,20 +59,12 @@ import static com.myenterprise.rest.component.CKEditorSanitizerPolicy.CKEDITOR_P
 @ControllerAdvice
 public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
 
+    private BeanWrapper wrapper;
+
     /**
      * Reader used to access application configuration properties.
      */
     private final ConfigurationPropertiesReader propertiesConfiguration;
-
-    /**
-     * Getter method of the current property being inspected.
-     */
-    private Method getter;
-
-    /**
-     * Setter method of the current property being inspected.
-     */
-    private Method setter;
 
     /**
      * Current response body being processed.
@@ -95,10 +88,9 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      */
     private Field field;
 
-    /**
-     * Controller method that produced the response.
-     */
-    private Method signature;
+    private MethodParameter returnType;
+
+    private Object propertyValue;
 
     /**
      * Creates a new {@code SanitizeHTMLResponse} using the provided
@@ -111,14 +103,14 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         this.propertiesConfiguration = propertiesConfiguration;
     }
 
-    private void sanitizeObject(Object value)
+    private void validateObject(Object value)
             throws InvocationTargetException, IllegalAccessException, IntrospectionException {
 
         if (value == null) return;
 
         if (value instanceof Iterable<?> iterable) {
             for (Object item : iterable) {
-                sanitizeObject(item);
+                validateObject(item);
             }
             return;
         }
@@ -127,23 +119,24 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
 
         Object previousBody = this.body;
         Class<?> previousClass = this.argumentClass;
+        BeanWrapper previousWrapper = this.wrapper;
 
         this.body = value;
         this.argumentClass = value.getClass();
+        this.wrapper = new BeanWrapperImpl(this.body);
 
-        this.iteratePropertiesOfAArgument();
+        this.iteratePropertiesOfAObject();
 
         this.body = previousBody;
         this.argumentClass = previousClass;
+        this.wrapper = previousWrapper;
     }
 
 
     private void validateIterable()
             throws InvocationTargetException, IllegalAccessException {
-
-        Object value = this.getter.invoke(this.body);
         try {
-            this.sanitizeObject(value);
+            this.validateObject(this.propertyValue);
         } catch (IntrospectionException e) {
             throw new RuntimeException(e);
         }
@@ -170,59 +163,50 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
             throws NoSuchFieldException, IllegalAccessException, InvocationTargetException {
 
         this.field = this.argumentClass.getDeclaredField(propertyDescriptor.getName());
-
-        boolean isGetterNull = Objects.isNull(this.getter);
-        boolean isSetterNull = Objects.isNull(this.setter);
         boolean isNotPropertyString = this.propertyDescriptor.getPropertyType() != String.class;
         boolean isIterable = this.propertyDescriptor.getPropertyType() == List.class;
         boolean hasNotSanitizeHTMLAnnotation = !this.field.isAnnotationPresent(SanitizeHTML.class);
-        boolean isArgumentInvokeNull = this.getter.invoke(this.body) == null;
+        this.propertyValue = wrapper.getPropertyValue(propertyDescriptor.getName());
+        boolean isNullPropertyValue = this.propertyValue == null;
 
-        if (isArgumentInvokeNull) throw new NoSuchFieldException();
+        if (isNullPropertyValue) throw new NoSuchFieldException();
 
         if (isIterable){
             this.validateIterable();
             throw new NoSuchFieldException();
         }
-        if (isGetterNull || isSetterNull || isNotPropertyString || hasNotSanitizeHTMLAnnotation){
+        if (isNotPropertyString || hasNotSanitizeHTMLAnnotation){
             throw new NoSuchFieldException();
         }
 
-        String originalValue = (String) this.getter.invoke(this.body);
-        boolean isNotHTML = !originalValue.contains("<");
+        boolean isNotHTML = !this.propertyValue.toString().contains("<");
         if (isNotHTML) throw new NoSuchFieldException();
     }
 
     /**
      * Sanitizes the value of the current String field using the CKEditor
      * sanitization policy and updates the field with the sanitized value.
-     *
-     * @throws IllegalAccessException    if the setter is not accessible
-     * @throws InvocationTargetException if an error occurs during method invocation
      */
-    private void sanitizeValueField()
-            throws IllegalAccessException, InvocationTargetException {
-
-        String originalValue = (String) this.getter.invoke(this.body);
+    private void sanitizeValueField() {
 
         SanitizerHTMLLoggerConfiguration loggerConfiguration =
                 new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration)
                         .setFieldName(this.field.getName())
                         .setModelClassName(this.argumentClass.getName())
-                        .setControllerClassName(this.signature.getDeclaringClass().getName())
-                        .setControllerMethodName(this.signature.getName());
+                        .setControllerClassName(this.returnType.getDeclaringClass().getName()) //TODO: Revisar no se muestran todos los logs.
+                        .setControllerMethodName(Objects.requireNonNull(this.returnType.getMethod()).getName());
 
         SanitizerHTMLListener sanitizerHTMLListener =
                 new SanitizerHTMLListener(loggerConfiguration, this.propertiesConfiguration);
 
         String sanitizedValue = CKEDITOR_POLICY.sanitize(
-                originalValue,
+                this.propertyValue.toString(),
                 sanitizerHTMLListener,
                 SanitizeHTMLResponse.class
         );
 
         sanitizerHTMLListener.register();
-        this.setter.invoke(this.body, sanitizedValue);
+        wrapper.setPropertyValue(this.propertyDescriptor.getName(), sanitizedValue);
     }
 
     /**
@@ -233,15 +217,14 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * @throws IllegalAccessException    if a field is not accessible
      * @throws InvocationTargetException if an error occurs during method invocation
      */
-    private void iteratePropertiesOfAArgument()
+    private void iteratePropertiesOfAObject()
             throws IntrospectionException, IllegalAccessException, InvocationTargetException {
 
-        for (PropertyDescriptor pd :
-                Introspector.getBeanInfo(this.argumentClass).getPropertyDescriptors()) {
+        this.wrapper = new BeanWrapperImpl(this.body);
+
+        for (PropertyDescriptor pd : wrapper.getPropertyDescriptors()) {
 
             this.propertyDescriptor = pd;
-            this.getter = pd.getReadMethod();
-            this.setter = pd.getWriteMethod();
 
             try {
                 this.validateField();
@@ -323,9 +306,9 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
 
         if (isPojo(body)) {
             this.argumentClass = body.getClass();
-            this.signature = returnType.getMethod();
+            this.returnType = returnType;
             try {
-                this.iteratePropertiesOfAArgument();
+                this.iteratePropertiesOfAObject();
             } catch (IntrospectionException | IllegalAccessException | InvocationTargetException error) {
                 throw new RuntimeException(error);
             }
@@ -336,10 +319,10 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
 
                 this.body = item;
                 this.argumentClass = item.getClass();
-                this.signature = returnType.getMethod();
+                this.returnType = returnType;
 
                 try {
-                    this.iteratePropertiesOfAArgument();
+                    this.iteratePropertiesOfAObject();
                 } catch (IntrospectionException | IllegalAccessException | InvocationTargetException error) {
                     throw new RuntimeException(error);
                 }
