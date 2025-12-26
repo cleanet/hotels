@@ -38,6 +38,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import com.myenterprise.rest.annotation.SanitizeHTML;
@@ -83,9 +84,11 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     private PropertyDescriptor propertyDescriptor;
 
     /**
-     * Superclass of the response body object being inspected.
+     * Class of the response body object being inspected.
      */
-    private Class<?> argumentSuperClass;
+    // Get the class because, this gets JPA object, not Entity.
+    // This is so, because is executed the HotelMapper.toModel(HotelsEntity)
+    private Class<?> argumentClass;
 
     /**
      * Field corresponding to the current property being inspected.
@@ -108,6 +111,45 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         this.propertiesConfiguration = propertiesConfiguration;
     }
 
+    private void sanitizeObject(Object value)
+            throws InvocationTargetException, IllegalAccessException, IntrospectionException {
+
+        if (value == null) return;
+
+        if (value instanceof Iterable<?> iterable) {
+            for (Object item : iterable) {
+                sanitizeObject(item);
+            }
+            return;
+        }
+
+        if (!isPojo(value)) return;
+
+        Object previousBody = this.body;
+        Class<?> previousClass = this.argumentClass;
+
+        this.body = value;
+        this.argumentClass = value.getClass();
+
+        this.iteratePropertiesOfAArgument();
+
+        this.body = previousBody;
+        this.argumentClass = previousClass;
+    }
+
+
+    private void validateIterable()
+            throws InvocationTargetException, IllegalAccessException {
+
+        Object value = this.getter.invoke(this.body);
+        try {
+            this.sanitizeObject(value);
+        } catch (IntrospectionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     /**
      * Validates whether the current field is eligible for HTML sanitization.
      * <p>
@@ -127,18 +169,28 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     private void validateField()
             throws NoSuchFieldException, IllegalAccessException, InvocationTargetException {
 
-        this.field = this.argumentSuperClass.getDeclaredField(propertyDescriptor.getName());
+        this.field = this.argumentClass.getDeclaredField(propertyDescriptor.getName());
 
         boolean isGetterNull = Objects.isNull(this.getter);
         boolean isSetterNull = Objects.isNull(this.setter);
         boolean isNotPropertyString = this.propertyDescriptor.getPropertyType() != String.class;
+        boolean isIterable = this.propertyDescriptor.getPropertyType() == List.class;
         boolean hasNotSanitizeHTMLAnnotation = !this.field.isAnnotationPresent(SanitizeHTML.class);
-
-        if (isGetterNull || isSetterNull || isNotPropertyString || hasNotSanitizeHTMLAnnotation)
-            throw new NoSuchFieldException();
-
         boolean isArgumentInvokeNull = this.getter.invoke(this.body) == null;
+
         if (isArgumentInvokeNull) throw new NoSuchFieldException();
+
+        if (isIterable){
+            this.validateIterable();
+            throw new NoSuchFieldException();
+        }
+        if (isGetterNull || isSetterNull || isNotPropertyString || hasNotSanitizeHTMLAnnotation){
+            throw new NoSuchFieldException();
+        }
+
+        String originalValue = (String) this.getter.invoke(this.body);
+        boolean isNotHTML = !originalValue.contains("<");
+        if (isNotHTML) throw new NoSuchFieldException();
     }
 
     /**
@@ -156,7 +208,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         SanitizerHTMLLoggerConfiguration loggerConfiguration =
                 new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration)
                         .setFieldName(this.field.getName())
-                        .setModelClassName(this.argumentSuperClass.getName())
+                        .setModelClassName(this.argumentClass.getName())
                         .setControllerClassName(this.signature.getDeclaringClass().getName())
                         .setControllerMethodName(this.signature.getName());
 
@@ -185,7 +237,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
             throws IntrospectionException, IllegalAccessException, InvocationTargetException {
 
         for (PropertyDescriptor pd :
-                Introspector.getBeanInfo(this.argumentSuperClass).getPropertyDescriptors()) {
+                Introspector.getBeanInfo(this.argumentClass).getPropertyDescriptors()) {
 
             this.propertyDescriptor = pd;
             this.getter = pd.getReadMethod();
@@ -270,7 +322,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         this.body = body;
 
         if (isPojo(body)) {
-            this.argumentSuperClass = body.getClass().getSuperclass();
+            this.argumentClass = body.getClass();
             this.signature = returnType.getMethod();
             try {
                 this.iteratePropertiesOfAArgument();
@@ -283,7 +335,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
                 if (item == null) return;
 
                 this.body = item;
-                this.argumentSuperClass = item.getClass().getSuperclass();
+                this.argumentClass = item.getClass();
                 this.signature = returnType.getMethod();
 
                 try {
