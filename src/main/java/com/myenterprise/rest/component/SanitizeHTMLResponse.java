@@ -36,10 +36,8 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import com.myenterprise.rest.annotation.SanitizeHTML;
@@ -59,38 +57,10 @@ import static com.myenterprise.rest.component.CKEditorSanitizerPolicy.CKEDITOR_P
 @ControllerAdvice
 public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
 
-    private BeanWrapper wrapper;
-
     /**
      * Reader used to access application configuration properties.
      */
     private final ConfigurationPropertiesReader propertiesConfiguration;
-
-    /**
-     * Current response body being processed.
-     */
-    private Object body;
-
-    /**
-     * Property descriptor of the current property being inspected.
-     */
-    private PropertyDescriptor propertyDescriptor;
-
-    /**
-     * Class of the response body object being inspected.
-     */
-    // Get the class because, this gets JPA object, not Entity.
-    // This is so, because is executed the HotelMapper.toModel(HotelsEntity)
-    private Class<?> argumentClass;
-
-    /**
-     * Field corresponding to the current property being inspected.
-     */
-    private Field field;
-
-    private MethodParameter returnType;
-
-    private Object propertyValue;
 
     /**
      * Creates a new {@code SanitizeHTMLResponse} using the provided
@@ -103,45 +73,20 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         this.propertiesConfiguration = propertiesConfiguration;
     }
 
-    private void validateObject(Object value)
-            throws InvocationTargetException, IllegalAccessException, IntrospectionException {
+    private void validateObject(BeanWrapper wrapper, MethodParameter returnType )
+            throws InvocationTargetException, IllegalAccessException, IntrospectionException, NoSuchFieldException {
+        Object object = wrapper.getWrappedInstance();
 
-        if (value == null) return;
-
-        if (value instanceof Iterable<?> iterable) {
+        if (object instanceof Iterable<?> iterable) {
             for (Object item : iterable) {
-                validateObject(item);
+                validateObject(new BeanWrapperImpl(item), returnType);
             }
             return;
         }
 
-        if (!isPojo(value)) return;
-
-        Object previousBody = this.body;
-        Class<?> previousClass = this.argumentClass;
-        BeanWrapper previousWrapper = this.wrapper;
-
-        this.body = value;
-        this.argumentClass = value.getClass();
-        this.wrapper = new BeanWrapperImpl(this.body);
-
-        this.iteratePropertiesOfAObject();
-
-        this.body = previousBody;
-        this.argumentClass = previousClass;
-        this.wrapper = previousWrapper;
+        if (!isPojo(object)) return;
+        this.iteratePropertiesOfAObject(wrapper, returnType);
     }
-
-
-    private void validateIterable()
-            throws InvocationTargetException, IllegalAccessException {
-        try {
-            this.validateObject(this.propertyValue);
-        } catch (IntrospectionException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 
     /**
      * Validates whether the current field is eligible for HTML sanitization.
@@ -159,27 +104,26 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * @throws IllegalAccessException    if the field is not accessible
      * @throws InvocationTargetException if an error occurs while invoking the getter
      */
-    private void validateField()
-            throws NoSuchFieldException, IllegalAccessException, InvocationTargetException {
+    private void validateField( BeanWrapper wrapper, PropertyDescriptor propertyDescriptor, MethodParameter returnType )
+            throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, IntrospectionException {
 
-        this.field = this.argumentClass.getDeclaredField(propertyDescriptor.getName());
-        boolean isNotPropertyString = this.propertyDescriptor.getPropertyType() != String.class;
-        boolean isIterable = this.propertyDescriptor.getPropertyType() == List.class;
-        boolean hasNotSanitizeHTMLAnnotation = !this.field.isAnnotationPresent(SanitizeHTML.class);
-        this.propertyValue = wrapper.getPropertyValue(propertyDescriptor.getName());
-        boolean isNullPropertyValue = this.propertyValue == null;
+        boolean isNotPropertyString = propertyDescriptor.getPropertyType() != String.class;
+        boolean isIterable = Iterable.class.isAssignableFrom(propertyDescriptor.getPropertyType());;
+        boolean hasNotSanitizeHTMLAnnotation = !propertyDescriptor.getReadMethod().isAnnotationPresent(SanitizeHTML.class);
+        Object propertyValue = wrapper.getPropertyValue(propertyDescriptor.getName());
+        boolean isNullPropertyValue = propertyValue == null;
 
         if (isNullPropertyValue) throw new NoSuchFieldException();
 
         if (isIterable){
-            this.validateIterable();
+            this.validateObject( new BeanWrapperImpl(propertyValue), returnType );
             throw new NoSuchFieldException();
         }
         if (isNotPropertyString || hasNotSanitizeHTMLAnnotation){
             throw new NoSuchFieldException();
         }
 
-        boolean isNotHTML = !this.propertyValue.toString().contains("<");
+        boolean isNotHTML = !propertyValue.toString().contains(">");
         if (isNotHTML) throw new NoSuchFieldException();
     }
 
@@ -187,26 +131,28 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * Sanitizes the value of the current String field using the CKEditor
      * sanitization policy and updates the field with the sanitized value.
      */
-    private void sanitizeValueField() {
+    private void sanitizeValueField( BeanWrapper wrapper, PropertyDescriptor propertyDescriptor, MethodParameter returnType ) {
 
         SanitizerHTMLLoggerConfiguration loggerConfiguration =
                 new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration)
-                        .setFieldName(this.field.getName())
-                        .setModelClassName(this.argumentClass.getName())
-                        .setControllerClassName(this.returnType.getDeclaringClass().getName()) //TODO: Revisar no se muestran todos los logs.
-                        .setControllerMethodName(Objects.requireNonNull(this.returnType.getMethod()).getName());
+                        .setFieldName(propertyDescriptor.getReadMethod().getName())
+                        .setModelClassName(wrapper.getWrappedClass().getName())
+                        .setControllerClassName(returnType.getDeclaringClass().getName())
+                        .setControllerMethodName(Objects.requireNonNull(returnType.getMethod()).getName());
 
         SanitizerHTMLListener sanitizerHTMLListener =
                 new SanitizerHTMLListener(loggerConfiguration, this.propertiesConfiguration);
 
+
+        String propertyValue = (String) wrapper.getPropertyValue(propertyDescriptor.getName());
         String sanitizedValue = CKEDITOR_POLICY.sanitize(
-                this.propertyValue.toString(),
+                propertyValue,
                 sanitizerHTMLListener,
                 SanitizeHTMLResponse.class
         );
 
         sanitizerHTMLListener.register();
-        wrapper.setPropertyValue(this.propertyDescriptor.getName(), sanitizedValue);
+        wrapper.setPropertyValue(propertyDescriptor.getName(), sanitizedValue);
     }
 
     /**
@@ -217,22 +163,18 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * @throws IllegalAccessException    if a field is not accessible
      * @throws InvocationTargetException if an error occurs during method invocation
      */
-    private void iteratePropertiesOfAObject()
-            throws IntrospectionException, IllegalAccessException, InvocationTargetException {
+    private void iteratePropertiesOfAObject( BeanWrapper wrapper, MethodParameter returnType )
+            throws IntrospectionException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
 
-        this.wrapper = new BeanWrapperImpl(this.body);
-
-        for (PropertyDescriptor pd : wrapper.getPropertyDescriptors()) {
-
-            this.propertyDescriptor = pd;
+        for (PropertyDescriptor propertyDescriptor : wrapper.getPropertyDescriptors()) {
 
             try {
-                this.validateField();
+                this.validateField( wrapper, propertyDescriptor, returnType );
             } catch (NoSuchFieldException ignored) {
                 continue;
             }
 
-            this.sanitizeValueField();
+            this.sanitizeValueField( wrapper, propertyDescriptor, returnType );
         }
     }
 
@@ -302,36 +244,31 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     ) {
         if (body == null) return null;
 
-        this.body = body;
+        BeanWrapper wrapper = new BeanWrapperImpl(body);
 
         if (isPojo(body)) {
-            this.argumentClass = body.getClass();
-            this.returnType = returnType;
             try {
-                this.iteratePropertiesOfAObject();
-            } catch (IntrospectionException | IllegalAccessException | InvocationTargetException error) {
+                this.iteratePropertiesOfAObject(wrapper, returnType);
+            } catch (IntrospectionException | IllegalAccessException | InvocationTargetException |
+                     NoSuchFieldException error) {
                 throw new RuntimeException(error);
             }
         } else if (body instanceof Iterable<?> collection) {
             ArrayList<Object> result = new ArrayList<>();
             collection.forEach(item -> {
                 if (item == null) return;
-
-                this.body = item;
-                this.argumentClass = item.getClass();
-                this.returnType = returnType;
-
+                BeanWrapper itemWrapper = new BeanWrapperImpl(item);
                 try {
-                    this.iteratePropertiesOfAObject();
-                } catch (IntrospectionException | IllegalAccessException | InvocationTargetException error) {
+                    this.iteratePropertiesOfAObject(itemWrapper, returnType);
+                } catch (IntrospectionException | IllegalAccessException | InvocationTargetException |
+                         NoSuchFieldException error) {
                     throw new RuntimeException(error);
                 }
-
-                result.add(this.body);
+                result.add(itemWrapper.getWrappedInstance());
             });
-            this.body = result;
+            return result;
         }
 
-        return this.body;
+        return body;
     }
 }
