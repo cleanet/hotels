@@ -36,6 +36,7 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -73,8 +74,10 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         this.propertiesConfiguration = propertiesConfiguration;
     }
 
-    private void validateObject(BeanWrapper wrapper, MethodParameter returnType )
-            throws InvocationTargetException, IllegalAccessException, IntrospectionException, NoSuchFieldException {
+    private void validateObject(
+            @NotNull BeanWrapper wrapper,
+            @NotNull MethodParameter returnType
+    ) throws InvocationTargetException, IllegalAccessException, IntrospectionException, NoSuchFieldException {
         Object object = wrapper.getWrappedInstance();
 
         if (object instanceof Iterable<?> iterable) {
@@ -100,38 +103,49 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      *   <li>Its current value is not {@code null}</li>
      * </ul>
      *
-     * @throws NoSuchFieldException      if the field does not meet the criteria
      * @throws IllegalAccessException    if the field is not accessible
      * @throws InvocationTargetException if an error occurs while invoking the getter
      */
-    private void validateField( BeanWrapper wrapper, PropertyDescriptor propertyDescriptor, MethodParameter returnType )
-            throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, IntrospectionException {
+    @NotNull
+    private Boolean isValidField(
+            @NotNull BeanWrapper wrapper,
+            @NotNull PropertyDescriptor propertyDescriptor,
+            @NotNull MethodParameter returnType
+    ) throws IllegalAccessException, InvocationTargetException, IntrospectionException, NoSuchFieldException {
+
+        Field field = wrapper.getWrappedClass().getDeclaredField(propertyDescriptor.getName());
 
         boolean isNotPropertyString = propertyDescriptor.getPropertyType() != String.class;
-        boolean isIterable = Iterable.class.isAssignableFrom(propertyDescriptor.getPropertyType());;
-        boolean hasNotSanitizeHTMLAnnotation = !propertyDescriptor.getReadMethod().isAnnotationPresent(SanitizeHTML.class);
+        boolean isIterable = Iterable.class.isAssignableFrom(propertyDescriptor.getPropertyType());
+        boolean hasNotSanitizeHTMLAnnotation = !field.isAnnotationPresent(SanitizeHTML.class);
         Object propertyValue = wrapper.getPropertyValue(propertyDescriptor.getName());
         boolean isNullPropertyValue = propertyValue == null;
 
-        if (isNullPropertyValue) throw new NoSuchFieldException();
+        if (isNullPropertyValue) return false;
 
         if (isIterable){
             this.validateObject( new BeanWrapperImpl(propertyValue), returnType );
-            throw new NoSuchFieldException();
+            return false;
         }
         if (isNotPropertyString || hasNotSanitizeHTMLAnnotation){
-            throw new NoSuchFieldException();
+            return false;
         }
 
         boolean isNotHTML = !propertyValue.toString().contains(">");
-        if (isNotHTML) throw new NoSuchFieldException();
+        if (isNotHTML) return false;
+        
+        return true;
     }
 
     /**
      * Sanitizes the value of the current String field using the CKEditor
      * sanitization policy and updates the field with the sanitized value.
      */
-    private void sanitizeValueField( BeanWrapper wrapper, PropertyDescriptor propertyDescriptor, MethodParameter returnType ) {
+    private void sanitizeValueField(
+            @NotNull BeanWrapper wrapper,
+            @NotNull PropertyDescriptor propertyDescriptor,
+            @NotNull MethodParameter returnType
+    ) {
 
         SanitizerHTMLLoggerConfiguration loggerConfiguration =
                 new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration)
@@ -163,16 +177,14 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * @throws IllegalAccessException    if a field is not accessible
      * @throws InvocationTargetException if an error occurs during method invocation
      */
-    private void iteratePropertiesOfAObject( BeanWrapper wrapper, MethodParameter returnType )
-            throws IntrospectionException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+    private void iteratePropertiesOfAObject(
+            @NotNull BeanWrapper wrapper,
+            @NotNull MethodParameter returnType
+    ) throws IntrospectionException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
 
         for (PropertyDescriptor propertyDescriptor : wrapper.getPropertyDescriptors()) {
-
-            try {
-                this.validateField( wrapper, propertyDescriptor, returnType );
-            } catch (NoSuchFieldException ignored) {
-                continue;
-            }
+            
+            if (!this.isValidField( wrapper, propertyDescriptor, returnType )) continue;
 
             this.sanitizeValueField( wrapper, propertyDescriptor, returnType );
         }
@@ -190,7 +202,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      */
     @Override
     public boolean supports(
-            MethodParameter returnType,
+            @NotNull MethodParameter returnType,
             @NotNull Class converterType
     ) {
         return returnType
