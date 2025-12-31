@@ -38,8 +38,7 @@ import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Objects;
+import java.util.*;
 
 import com.myenterprise.rest.annotation.SanitizeHTML;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -62,6 +61,10 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * Reader used to access application configuration properties.
      */
     private final ConfigurationPropertiesReader propertiesConfiguration;
+
+    private final Map<Class<?>, List<PropertyDescriptor>> cachedPropertyDescriptors = new HashMap<>();
+
+    private final Map<Class<?>, List<String>> cachedPropertyNamesToSanitize = new HashMap<>();
 
     /**
      * Creates a new {@code SanitizeHTMLResponse} using the provided
@@ -108,33 +111,44 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      */
     @NotNull
     private Boolean isValidField(
-            @NotNull BeanWrapper wrapper,
+            @NotNull Class<?> clazz,
             @NotNull PropertyDescriptor propertyDescriptor,
-            @NotNull MethodParameter returnType
+            @NotNull MethodParameter returnType,
+            @NotNull String propertyName,
+            @NotNull Object propertyValue
     ) throws IllegalAccessException, InvocationTargetException, IntrospectionException, NoSuchFieldException {
+        if ("class".equals(propertyName)) {
+            return false;
+        }
 
-        Field field = wrapper.getWrappedClass().getDeclaredField(propertyDescriptor.getName());
+        if (this.isCachedPropertyNameToSanitize( clazz, propertyName )) return true;
+
+        Field field = clazz.getDeclaredField(propertyDescriptor.getName());
 
         boolean isNotPropertyString = propertyDescriptor.getPropertyType() != String.class;
         boolean isIterable = Iterable.class.isAssignableFrom(propertyDescriptor.getPropertyType());
         boolean hasNotSanitizeHTMLAnnotation = !field.isAnnotationPresent(SanitizeHTML.class);
-        Object propertyValue = wrapper.getPropertyValue(propertyDescriptor.getName());
-        boolean isNullPropertyValue = propertyValue == null;
-
-        if (isNullPropertyValue) return false;
+        boolean isEmptyPropertyValue = propertyValue.toString().isEmpty();
 
         if (isIterable){
             this.validateObject( new BeanWrapperImpl(propertyValue), returnType );
             return false;
         }
-        if (isNotPropertyString || hasNotSanitizeHTMLAnnotation){
+        if (isNotPropertyString || hasNotSanitizeHTMLAnnotation || isEmptyPropertyValue ){
             return false;
         }
+        return this.hasHTML(propertyValue.toString());
+    }
 
-        boolean isNotHTML = !propertyValue.toString().contains(">");
-        if (isNotHTML) return false;
-        
-        return true;
+    private boolean hasHTML(@NotNull String value ){
+        return value.contains("<");
+    }
+
+    private List<PropertyDescriptor> getPropertyDescriptors(@NotNull Class<?> clazz) {
+        return this.cachedPropertyDescriptors.computeIfAbsent(clazz, item -> {
+            BeanWrapper wrapper = new BeanWrapperImpl(item);
+            return Arrays.asList(wrapper.getPropertyDescriptors());
+        });
     }
 
     /**
@@ -142,31 +156,50 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * sanitization policy and updates the field with the sanitized value.
      */
     private void sanitizeValueField(
+            @NotNull Class<?> clazz,
             @NotNull BeanWrapper wrapper,
             @NotNull PropertyDescriptor propertyDescriptor,
-            @NotNull MethodParameter returnType
+            @NotNull MethodParameter returnType,
+            @NotNull String propertyName,
+            @NotNull Object propertyValue
     ) {
 
         SanitizerHTMLLoggerConfiguration loggerConfiguration =
                 new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration)
-                        .setFieldName(propertyDescriptor.getReadMethod().getName())
-                        .setModelClassName(wrapper.getWrappedClass().getName())
+                        .setFieldName(propertyName)
+                        .setModelClassName(clazz.getName())
                         .setControllerClassName(returnType.getDeclaringClass().getName())
                         .setControllerMethodName(Objects.requireNonNull(returnType.getMethod()).getName());
 
         SanitizerHTMLListener sanitizerHTMLListener =
                 new SanitizerHTMLListener(loggerConfiguration, this.propertiesConfiguration);
 
-
-        String propertyValue = (String) wrapper.getPropertyValue(propertyDescriptor.getName());
         String sanitizedValue = CKEDITOR_POLICY.sanitize(
-                propertyValue,
+                propertyValue.toString(),
                 sanitizerHTMLListener,
                 SanitizeHTMLResponse.class
         );
 
         sanitizerHTMLListener.register();
-        wrapper.setPropertyValue(propertyDescriptor.getName(), sanitizedValue);
+        wrapper.setPropertyValue(propertyName, sanitizedValue);
+    }
+
+    private boolean isCachedPropertyNameToSanitize( @NotNull Class<?> clazz, @NotNull String propertyName ){
+        if ( this.cachedPropertyNamesToSanitize.get(clazz) != null && !this.cachedPropertyNamesToSanitize.get(clazz).isEmpty() ){
+            return this.cachedPropertyNamesToSanitize.get(clazz).contains(propertyName);
+        }
+        return false;
+    }
+
+    private void cachePropertyNameToSanitize(@NotNull Class<?> clazz, @NotNull String propertyName ){
+        if ( this.cachedPropertyNamesToSanitize.get(clazz) == null ){
+            List<String> list = new ArrayList<>();
+            list.add(propertyName);
+            this.cachedPropertyNamesToSanitize.put(clazz, list);
+        } else {
+            List<String> list = this.cachedPropertyNamesToSanitize.get(clazz);
+            if (!list.contains(propertyName))  list.add(propertyName);
+        }
     }
 
     /**
@@ -182,11 +215,19 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
             @NotNull MethodParameter returnType
     ) throws IntrospectionException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
 
-        for (PropertyDescriptor propertyDescriptor : wrapper.getPropertyDescriptors()) {
-            
-            if (!this.isValidField( wrapper, propertyDescriptor, returnType )) continue;
+        for (PropertyDescriptor propertyDescriptor : this.getPropertyDescriptors(wrapper.getWrappedClass())) {
 
-            this.sanitizeValueField( wrapper, propertyDescriptor, returnType );
+            String propertyName = propertyDescriptor.getName();
+            Object propertyValue = wrapper.getPropertyValue(propertyName);
+            Class<?> clazz = wrapper.getWrappedClass();
+
+            if (propertyValue == null) continue;
+
+            if (!this.isValidField( clazz, propertyDescriptor, returnType, propertyName, propertyValue )) continue;
+
+            this.sanitizeValueField( clazz, wrapper, propertyDescriptor, returnType, propertyName, propertyValue );
+
+            this.cachePropertyNameToSanitize( clazz, propertyName );
         }
     }
 
@@ -278,9 +319,8 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
                 }
                 result.add(itemWrapper.getWrappedInstance());
             });
-            return result;
+            body = result;
         }
-
         return body;
     }
 }
