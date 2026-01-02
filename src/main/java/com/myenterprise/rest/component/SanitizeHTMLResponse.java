@@ -39,6 +39,8 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import com.myenterprise.rest.annotation.SanitizeHTML;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -62,9 +64,15 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      */
     private final ConfigurationPropertiesReader propertiesConfiguration;
 
-    private final Map<Class<?>, List<PropertyDescriptor>> cachedPropertyDescriptors = new HashMap<>();
+    private final SanitizerHTMLLoggerConfiguration logger;
 
-    private final Map<Class<?>, List<String>> cachedPropertyNamesToSanitize = new HashMap<>();
+    private final Map<Class<?>, List<PropertyDescriptor>> cachedPropertyDescriptors = new ConcurrentHashMap<>();
+
+    private final Map<Class<?>, List<String>> cachedPropertyNamesToSanitize = new ConcurrentHashMap<>();
+
+    private static final Pattern API_PACKAGE = Pattern.compile("com\\.myenterprise\\.rest\\..*\\.api.*");
+
+    private static final Pattern HTML_PATTERN = Pattern.compile("<[^>]+>");
 
     /**
      * Creates a new {@code SanitizeHTMLResponse} using the provided
@@ -75,22 +83,23 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     @Autowired
     public SanitizeHTMLResponse(ConfigurationPropertiesReader propertiesConfiguration) {
         this.propertiesConfiguration = propertiesConfiguration;
+        this.logger = new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration);
     }
 
     private void validateObject(
-            @NotNull BeanWrapper wrapper,
+            @NotNull Object object,
             @NotNull MethodParameter returnType
     ) throws InvocationTargetException, IllegalAccessException, IntrospectionException, NoSuchFieldException {
-        Object object = wrapper.getWrappedInstance();
 
         if (object instanceof Iterable<?> iterable) {
             for (Object item : iterable) {
-                validateObject(new BeanWrapperImpl(item), returnType);
+                validateObject(item, returnType);
             }
             return;
         }
 
         if (!isPojo(object)) return;
+        BeanWrapper wrapper = new BeanWrapperImpl(object);
         this.iteratePropertiesOfAObject(wrapper, returnType);
     }
 
@@ -131,7 +140,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
         boolean isEmptyPropertyValue = propertyValue.toString().isEmpty();
 
         if (isIterable){
-            this.validateObject( new BeanWrapperImpl(propertyValue), returnType );
+            this.validateObject( propertyValue, returnType );
             return false;
         }
         if (isNotPropertyString || hasNotSanitizeHTMLAnnotation || isEmptyPropertyValue ){
@@ -141,7 +150,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     }
 
     private boolean hasHTML(@NotNull String value ){
-        return value.contains("<");
+        return HTML_PATTERN.matcher(value).find();
     }
 
     private List<PropertyDescriptor> getPropertyDescriptors(@NotNull Class<?> clazz) {
@@ -164,15 +173,13 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
             @NotNull Object propertyValue
     ) {
 
-        SanitizerHTMLLoggerConfiguration loggerConfiguration =
-                new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration)
-                        .setFieldName(propertyName)
-                        .setModelClassName(clazz.getName())
-                        .setControllerClassName(returnType.getDeclaringClass().getName())
-                        .setControllerMethodName(Objects.requireNonNull(returnType.getMethod()).getName());
+        this.logger.setFieldName(propertyName)
+                   .setModelClassName(clazz.getName())
+                   .setControllerClassName(returnType.getDeclaringClass().getName())
+                   .setControllerMethodName(Objects.requireNonNull(returnType.getMethod()).getName());
 
         SanitizerHTMLListener sanitizerHTMLListener =
-                new SanitizerHTMLListener(loggerConfiguration, this.propertiesConfiguration);
+                new SanitizerHTMLListener(this.logger, this.propertiesConfiguration);
 
         String sanitizedValue = CKEDITOR_POLICY.sanitize(
                 propertyValue.toString(),
@@ -192,14 +199,15 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
     }
 
     private void cachePropertyNameToSanitize(@NotNull Class<?> clazz, @NotNull String propertyName ){
+        List<String> list = new ArrayList<>();
         if ( this.cachedPropertyNamesToSanitize.get(clazz) == null ){
-            List<String> list = new ArrayList<>();
             list.add(propertyName);
             this.cachedPropertyNamesToSanitize.put(clazz, list);
         } else {
-            List<String> list = this.cachedPropertyNamesToSanitize.get(clazz);
+            list = this.cachedPropertyNamesToSanitize.get(clazz);
             if (!list.contains(propertyName))  list.add(propertyName);
         }
+        this.cachedPropertyNamesToSanitize.put(clazz, list);
     }
 
     /**
@@ -246,11 +254,12 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
             @NotNull MethodParameter returnType,
             @NotNull Class converterType
     ) {
-        return returnType
-                .getContainingClass()
-                .getPackage()
-                .getName()
-                .matches("com.myenterprise.rest.(.*).api(.*)");
+        return API_PACKAGE.matcher(
+                returnType
+                        .getContainingClass()
+                        .getPackage()
+                        .getName()
+        ).matches();
     }
 
     /**
