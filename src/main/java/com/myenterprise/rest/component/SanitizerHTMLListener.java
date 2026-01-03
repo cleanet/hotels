@@ -23,8 +23,6 @@
  */
 package com.myenterprise.rest.component;
 
-import com.myenterprise.rest.v1.configuration.ConfigurationPropertiesReader;
-import org.jetbrains.annotations.NotNull;
 import org.owasp.html.HtmlChangeListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -54,21 +52,16 @@ public class SanitizerHTMLListener implements HtmlChangeListener<Class<?>> {
     /**
      * Configuration object to store and manage logger details for sanitization events.
      */
-    private final SanitizerHTMLLoggerConfiguration sanitizerHTMLLoggerConfiguration;
+    private SanitizerHTMLLoggerConfiguration sanitizerHTMLLoggerConfiguration;
 
     /**
      * Constructs a new SanitizerHTMLListener.
-     *
-     * @param loggerConfiguration a {@link SanitizerHTMLLoggerConfiguration} instance to be used for logging.
-     * @param propertiesConfiguration a {@link ConfigurationPropertiesReader} instance for reading properties.
      */
     @Autowired
-    public SanitizerHTMLListener(@NotNull SanitizerHTMLLoggerConfiguration loggerConfiguration, @NotNull ConfigurationPropertiesReader propertiesConfiguration){
-        this.sanitizerHTMLLoggerConfiguration = new SanitizerHTMLLoggerConfiguration(propertiesConfiguration)
-                .setFieldName(loggerConfiguration.getFieldName())
-                .setControllerClassName(loggerConfiguration.getControllerClassName())
-                .setControllerMethodName(loggerConfiguration.getControllerMethodName())
-                .setModelClassName(loggerConfiguration.getModelClassName());
+    public SanitizerHTMLListener(){}
+
+    public void setSanitizerHTMLLoggerConfiguration( SanitizerHTMLLoggerConfiguration sanitizerHTMLLoggerConfiguration ){
+        this.sanitizerHTMLLoggerConfiguration = sanitizerHTMLLoggerConfiguration;
     }
 
     /**

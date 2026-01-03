@@ -57,10 +57,9 @@ import static com.myenterprise.rest.component.CKEditorSanitizerPolicy.CKEDITOR_P
 @ControllerAdvice
 public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
 
-    /**
-     * Reader used to access application configuration properties.
-     */
-    private final ConfigurationPropertiesReader propertiesConfiguration;
+    private final SanitizerHTMLListener sanitizerHTMLListener = new SanitizerHTMLListener();
+
+    private final SanitizerHTMLLoggerConfiguration sanitizerHTMLLoggerConfiguration;
 
     /**
      * Getter method of the current property being inspected.
@@ -105,7 +104,7 @@ public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
      */
     @Autowired
     public SanitizeHTMLRequestBody(ConfigurationPropertiesReader propertiesConfiguration) {
-        this.propertiesConfiguration = propertiesConfiguration;
+        this.sanitizerHTMLLoggerConfiguration = new SanitizerHTMLLoggerConfiguration(propertiesConfiguration);
     }
 
     /**
@@ -153,23 +152,21 @@ public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
 
         String originalValue = (String) this.getter.invoke(this.body);
 
-        SanitizerHTMLLoggerConfiguration loggerConfiguration =
-                new SanitizerHTMLLoggerConfiguration(this.propertiesConfiguration)
-                        .setFieldName(this.field.getName())
-                        .setModelClassName(this.argumentClass.getName())
-                        .setControllerClassName(this.signature.getDeclaringClass().getName())
-                        .setControllerMethodName(this.signature.getName());
+        this.sanitizerHTMLLoggerConfiguration
+                .setFieldName(this.field.getName())
+                .setModelClassName(this.argumentClass.getName())
+                .setControllerClassName(this.signature.getDeclaringClass().getName())
+                .setControllerMethodName(this.signature.getName());
 
-        SanitizerHTMLListener sanitizerHTMLListener =
-                new SanitizerHTMLListener(loggerConfiguration, this.propertiesConfiguration);
+        this.sanitizerHTMLListener.setSanitizerHTMLLoggerConfiguration(this.sanitizerHTMLLoggerConfiguration);
 
         String sanitizedValue = CKEDITOR_POLICY.sanitize(
                 originalValue,
-                sanitizerHTMLListener,
+                this.sanitizerHTMLListener,
                 SanitizeHTMLRequestBody.class
         );
 
-        sanitizerHTMLListener.register();
+        this.sanitizerHTMLListener.register();
         this.setter.invoke(this.body, sanitizedValue);
     }
 
