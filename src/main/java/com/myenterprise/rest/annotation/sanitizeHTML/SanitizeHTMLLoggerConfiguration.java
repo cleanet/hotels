@@ -21,7 +21,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
-package com.myenterprise.rest.component;
+package com.myenterprise.rest.annotation.sanitizeHTML;
 
 import com.myenterprise.rest.v1.configuration.ConfigurationPropertiesReader;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  * based on a configured template.
  */
 @Component
-public class SanitizerHTMLLoggerConfiguration {
+public class SanitizeHTMLLoggerConfiguration {
 
     /**
      * The configuration properties reader.
@@ -78,12 +78,12 @@ public class SanitizerHTMLLoggerConfiguration {
     private HashMap<String, String[]> rejectedAttributes = new HashMap<>();
 
     /**
-     * Constructs a new SanitizerHTMLLoggerConfiguration with a configuration properties reader.
+     * Constructs a new SanitizeHTMLLoggerConfiguration with a configuration properties reader.
      *
      * @param configurationProperties the configuration properties reader.
      */
     @Autowired
-    public SanitizerHTMLLoggerConfiguration( ConfigurationPropertiesReader configurationProperties ){
+    public SanitizeHTMLLoggerConfiguration(ConfigurationPropertiesReader configurationProperties ){
         this.configurationProperties = configurationProperties;
     }
 
@@ -118,7 +118,7 @@ public class SanitizerHTMLLoggerConfiguration {
      * @param fieldName the field name.
      * @return this configuration object.
      */
-    public SanitizerHTMLLoggerConfiguration setFieldName(String fieldName) {
+    public SanitizeHTMLLoggerConfiguration setFieldName(String fieldName) {
         this.fieldName = fieldName;
         return this;
     }
@@ -138,7 +138,7 @@ public class SanitizerHTMLLoggerConfiguration {
      * @param modelClassName the model class name.
      * @return this configuration object.
      */
-    public SanitizerHTMLLoggerConfiguration setModelClassName(String modelClassName) {
+    public SanitizeHTMLLoggerConfiguration setModelClassName(String modelClassName) {
         this.modelClassName = modelClassName;
         return this;
     }
@@ -158,7 +158,7 @@ public class SanitizerHTMLLoggerConfiguration {
      * @param controllerClassName the controller class name.
      * @return this configuration object.
      */
-    public SanitizerHTMLLoggerConfiguration setControllerClassName(String controllerClassName) {
+    public SanitizeHTMLLoggerConfiguration setControllerClassName(String controllerClassName) {
         this.controllerClassName = controllerClassName;
         return this;
     }
@@ -178,7 +178,7 @@ public class SanitizerHTMLLoggerConfiguration {
      * @param controllerMethodName the controller method name.
      * @return this configuration object.
      */
-    public SanitizerHTMLLoggerConfiguration setControllerMethodName(String controllerMethodName) {
+    public SanitizeHTMLLoggerConfiguration setControllerMethodName(String controllerMethodName) {
         this.controllerMethodName = controllerMethodName;
         return this;
     }

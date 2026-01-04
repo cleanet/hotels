@@ -23,6 +23,8 @@
  */
 package com.myenterprise.rest.component;
 
+import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTMLListener;
+import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTMLLoggerConfiguration;
 import com.myenterprise.rest.v1.configuration.ConfigurationPropertiesReader;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,11 +42,9 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Objects;
 
-import com.myenterprise.rest.annotation.SanitizeHTML;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdvice;
+import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML;
 
-import static com.myenterprise.rest.component.CKEditorSanitizerPolicy.CKEDITOR_POLICY;
+import static com.myenterprise.rest.annotation.sanitizeHTML.SanitizePolicy.CKEDITOR_POLICY;
 
 /**
  * Advice that sanitizes HTML content in request bodies after they are read
@@ -54,12 +54,12 @@ import static com.myenterprise.rest.component.CKEditorSanitizerPolicy.CKEDITOR_P
  * to String properties annotated with {@link SanitizeHTML}.
  */
 @Component
-@ControllerAdvice
-public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
+//@ControllerAdvice
+public class SanitizeHTMLRequestBody { //implements RequestBodyAdvice {
 
-    private final SanitizerHTMLListener sanitizerHTMLListener = new SanitizerHTMLListener();
+    private final SanitizeHTMLListener sanitizeHTMLListener = new SanitizeHTMLListener();
 
-    private final SanitizerHTMLLoggerConfiguration sanitizerHTMLLoggerConfiguration;
+    private final SanitizeHTMLLoggerConfiguration sanitizeHTMLLoggerConfiguration;
 
     /**
      * Getter method of the current property being inspected.
@@ -104,7 +104,7 @@ public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
      */
     @Autowired
     public SanitizeHTMLRequestBody(ConfigurationPropertiesReader propertiesConfiguration) {
-        this.sanitizerHTMLLoggerConfiguration = new SanitizerHTMLLoggerConfiguration(propertiesConfiguration);
+        this.sanitizeHTMLLoggerConfiguration = new SanitizeHTMLLoggerConfiguration(propertiesConfiguration);
     }
 
     /**
@@ -152,21 +152,21 @@ public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
 
         String originalValue = (String) this.getter.invoke(this.body);
 
-        this.sanitizerHTMLLoggerConfiguration
+        this.sanitizeHTMLLoggerConfiguration
                 .setFieldName(this.field.getName())
                 .setModelClassName(this.argumentClass.getName())
                 .setControllerClassName(this.signature.getDeclaringClass().getName())
                 .setControllerMethodName(this.signature.getName());
 
-        this.sanitizerHTMLListener.setSanitizerHTMLLoggerConfiguration(this.sanitizerHTMLLoggerConfiguration);
+        this.sanitizeHTMLListener.setSanitizerHTMLLoggerConfiguration(this.sanitizeHTMLLoggerConfiguration);
 
         String sanitizedValue = CKEDITOR_POLICY.sanitize(
                 originalValue,
-                this.sanitizerHTMLListener,
+                this.sanitizeHTMLListener,
                 SanitizeHTMLRequestBody.class
         );
 
-        this.sanitizerHTMLListener.register();
+        this.sanitizeHTMLListener.register();
         this.setter.invoke(this.body, sanitizedValue);
     }
 
@@ -209,7 +209,7 @@ public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
      * @param converterType  selected HTTP message converter
      * @return {@code true} if the request body should be intercepted
      */
-    @Override
+    //@Override
     public boolean supports(
             @NotNull MethodParameter methodParameter,
             @NotNull Type targetType,
@@ -230,7 +230,7 @@ public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
      * @return the original {@link HttpInputMessage}
      */
     @NotNull
-    @Override
+    //@Override
     public HttpInputMessage beforeBodyRead(
             @NotNull HttpInputMessage inputMessage,
             @NotNull MethodParameter parameter,
@@ -250,7 +250,7 @@ public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
      * @return sanitized request body
      */
     @NotNull
-    @Override
+    //@Override
     public Object afterBodyRead(
             @NotNull Object body,
             @NotNull HttpInputMessage inputMessage,
@@ -298,7 +298,7 @@ public class SanitizeHTMLRequestBody implements RequestBodyAdvice {
      *
      * @return the original body
      */
-    @Override
+    //@Override
     public Object handleEmptyBody(
             Object body,
             @NotNull HttpInputMessage inputMessage,

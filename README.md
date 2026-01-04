@@ -427,12 +427,12 @@ basePackage: com.myenterprise.rest
 ```
 The output is:
 ```
-import com.myenterprise.rest.annotation.SanitizeHTML;
+import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML;
 ```
 otherwise, the compilation will fail.
 
 If we don't want to use the mustaches templates. We add in the `x-field-extra-annotation` property with the value:
-`@com.myenterprise.rest.annotation.SanitizeHTML`. So is not necessary to import the class.
+`@com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML`. So is not necessary to import the class.
 
 ### CORS
 Now, we configure the CORS. For only allows the origins `http://localhost:8080`.

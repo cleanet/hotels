@@ -21,7 +21,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
-package com.myenterprise.rest.component;
+package com.myenterprise.rest.annotation.sanitizeHTML;
 
 import org.owasp.html.HtmlChangeListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,25 +43,25 @@ import java.util.logging.Logger;
  * configuration.
  */
 @Component
-public class SanitizerHTMLListener implements HtmlChangeListener<Class<?>> {
+public class SanitizeHTMLListener implements HtmlChangeListener<Class<?>> {
 
     /**
      * The logger for this class.
      */
-    private static final Logger LOGGER = Logger.getLogger(SanitizerHTMLListener.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(SanitizeHTMLListener.class.getName());
     /**
      * Configuration object to store and manage logger details for sanitization events.
      */
-    private SanitizerHTMLLoggerConfiguration sanitizerHTMLLoggerConfiguration;
+    private SanitizeHTMLLoggerConfiguration sanitizeHTMLLoggerConfiguration;
 
     /**
-     * Constructs a new SanitizerHTMLListener.
+     * Constructs a new SanitizeHTMLListener.
      */
     @Autowired
-    public SanitizerHTMLListener(){}
+    public SanitizeHTMLListener(){}
 
-    public void setSanitizerHTMLLoggerConfiguration( SanitizerHTMLLoggerConfiguration sanitizerHTMLLoggerConfiguration ){
-        this.sanitizerHTMLLoggerConfiguration = sanitizerHTMLLoggerConfiguration;
+    public void setSanitizerHTMLLoggerConfiguration( SanitizeHTMLLoggerConfiguration sanitizeHTMLLoggerConfiguration){
+        this.sanitizeHTMLLoggerConfiguration = sanitizeHTMLLoggerConfiguration;
     }
 
     /**
@@ -72,13 +72,13 @@ public class SanitizerHTMLListener implements HtmlChangeListener<Class<?>> {
      * and then clears the internal lists of rejected items.
      */
     public void register(){
-        if ( sanitizerHTMLLoggerConfiguration.getRejectedAttributes().isEmpty() &&
-                sanitizerHTMLLoggerConfiguration.getRejectedTags().isEmpty() ) return;
+        if ( sanitizeHTMLLoggerConfiguration.getRejectedAttributes().isEmpty() &&
+                sanitizeHTMLLoggerConfiguration.getRejectedTags().isEmpty() ) return;
 
-        String message = sanitizerHTMLLoggerConfiguration.toString();
+        String message = sanitizeHTMLLoggerConfiguration.toString();
         LOGGER.warning(message);
-        sanitizerHTMLLoggerConfiguration.clearRejectedTags();
-        sanitizerHTMLLoggerConfiguration.clearRejectedAttributes();
+        sanitizeHTMLLoggerConfiguration.clearRejectedTags();
+        sanitizeHTMLLoggerConfiguration.clearRejectedAttributes();
     }
 
     /**
@@ -90,7 +90,7 @@ public class SanitizerHTMLListener implements HtmlChangeListener<Class<?>> {
      */
     @Override
     public void discardedTag(Class<?> sanitizeHTMLAspect, String tagName) {
-        sanitizerHTMLLoggerConfiguration.setRejectedTags(tagName);
+        sanitizeHTMLLoggerConfiguration.setRejectedTags(tagName);
     }
 
     /**
@@ -102,6 +102,6 @@ public class SanitizerHTMLListener implements HtmlChangeListener<Class<?>> {
      */
     @Override
     public void discardedAttributes(Class<?> sanitizeHTMLAspect, String tagName, String... attributes) {
-        sanitizerHTMLLoggerConfiguration.setRejectedAttributes(tagName, attributes);
+        sanitizeHTMLLoggerConfiguration.setRejectedAttributes(tagName, attributes);
     }
 }

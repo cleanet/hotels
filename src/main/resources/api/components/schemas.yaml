@@ -17,7 +17,7 @@ Hotel:
           format: uuid
           readOnly: true
         name:
-          x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+          x-field-extra-annotation: '@com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML'
           type: string
           example: Hotel Continental
       required:
@@ -30,15 +30,15 @@ HotelInput:
       type: string
       example: Hotel Continental
     description:
-      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML'
       type: string
       example: This is hotel is the best hotel of the world
     address:
-      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML'
       type: string
       example: Street Falsa 123
     city:
-      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML'
       type: string
       example: Madrid
     rating:
@@ -65,7 +65,7 @@ Facility:
         - cinema
         - swimming pool
     shortDescription:
-      x-field-extra-annotation: '@com.myenterprise.rest.annotation.SanitizeHTML'
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML'
       type: string
       example: The best restaurant of hotel
   required: [type, shortDescription]

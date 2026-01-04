@@ -24,6 +24,8 @@
 // 20ms~40ms
 package com.myenterprise.rest.component;
 
+import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTMLListener;
+import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTMLLoggerConfiguration;
 import com.myenterprise.rest.v1.configuration.ConfigurationPropertiesReader;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanWrapper;
@@ -42,11 +44,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import com.myenterprise.rest.annotation.SanitizeHTML;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTML;
 
-import static com.myenterprise.rest.component.CKEditorSanitizerPolicy.CKEDITOR_POLICY;
+import static com.myenterprise.rest.annotation.sanitizeHTML.SanitizePolicy.CKEDITOR_POLICY;
 // Usar JsonSerializer y JsonDeserializer ya que es más optimo que Advice. Para sanear los campos.
 // Para validar los queryParams de los POST si se debe usar RequestBodyAdvice.
 // https://docs.spring.io/spring-boot/3.5/reference/features/json.html
@@ -258,10 +258,10 @@ Si quieres, puedo hacer un **diagrama visual del runtime** comparando **Advice v
  * to String properties annotated with {@link SanitizeHTML}.
  */
 @Component
-@ControllerAdvice
-public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
+//@ControllerAdvice
+public class SanitizeHTMLResponse { //implements ResponseBodyAdvice<Object> {
 
-    private final SanitizerHTMLLoggerConfiguration sanitizerHTMLLoggerConfiguration;
+    private final SanitizeHTMLLoggerConfiguration sanitizeHTMLLoggerConfiguration;
 
     private final Map<Class<?>, List<PropertyDescriptor>> cachedPropertyDescriptors = new ConcurrentHashMap<>();
 
@@ -271,7 +271,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
 
     private static final Pattern HTML_PATTERN = Pattern.compile("<[^>]+>");
 
-    private final SanitizerHTMLListener sanitizerHTMLListener = new SanitizerHTMLListener();
+    private final SanitizeHTMLListener sanitizeHTMLListener = new SanitizeHTMLListener();
 
     /**
      * Creates a new {@code SanitizeHTMLResponse} using the provided
@@ -281,7 +281,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      */
     @Autowired
     public SanitizeHTMLResponse(ConfigurationPropertiesReader propertiesConfiguration) {
-        this.sanitizerHTMLLoggerConfiguration = new SanitizerHTMLLoggerConfiguration(propertiesConfiguration);
+        this.sanitizeHTMLLoggerConfiguration = new SanitizeHTMLLoggerConfiguration(propertiesConfiguration);
     }
 
     private void validateObject(
@@ -370,20 +370,20 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
             @NotNull Object propertyValue
     ) {
 
-        this.sanitizerHTMLLoggerConfiguration.setFieldName(propertyName)
+        this.sanitizeHTMLLoggerConfiguration.setFieldName(propertyName)
                    .setModelClassName(clazz.getName())
                    .setControllerClassName(returnType.getDeclaringClass().getName())
                    .setControllerMethodName(Objects.requireNonNull(returnType.getMethod()).getName());
 
-        this.sanitizerHTMLListener.setSanitizerHTMLLoggerConfiguration(this.sanitizerHTMLLoggerConfiguration);
+        this.sanitizeHTMLListener.setSanitizerHTMLLoggerConfiguration(this.sanitizeHTMLLoggerConfiguration);
 
         String sanitizedValue = CKEDITOR_POLICY.sanitize(
                 propertyValue.toString(),
-                this.sanitizerHTMLListener,
+                this.sanitizeHTMLListener,
                 SanitizeHTMLResponse.class
         );
 
-        this.sanitizerHTMLListener.register();
+        this.sanitizeHTMLListener.register();
         wrapper.setPropertyValue(propertyName, sanitizedValue);
     }
 
@@ -445,7 +445,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * @param converterType selected HTTP message converter
      * @return {@code true} if the response body should be intercepted
      */
-    @Override
+    //@Override
     public boolean supports(
             @NotNull MethodParameter returnType,
             @NotNull Class converterType
@@ -491,7 +491,7 @@ public class SanitizeHTMLResponse implements ResponseBodyAdvice<Object> {
      * @param response              current HTTP response
      * @return sanitized response body
      */
-    @Override
+    //@Override
     public Object beforeBodyWrite(
             Object body,
             @NotNull MethodParameter returnType,
