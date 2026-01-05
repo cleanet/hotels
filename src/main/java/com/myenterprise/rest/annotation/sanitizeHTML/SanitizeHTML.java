@@ -23,6 +23,9 @@
  */
 package com.myenterprise.rest.annotation.sanitizeHTML;
 
+import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import java.lang.annotation.*;
 
 /**
@@ -33,6 +36,8 @@ import java.lang.annotation.*;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
+@JacksonAnnotationsInside
+@JsonSerialize(using = SanitizeHTMLSerializer.class)
 @Documented
 public @interface SanitizeHTML {
 }

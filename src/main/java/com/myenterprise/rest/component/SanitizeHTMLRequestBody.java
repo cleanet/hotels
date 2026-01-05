@@ -23,8 +23,6 @@
  */
 package com.myenterprise.rest.component;
 
-import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTMLListener;
-import com.myenterprise.rest.annotation.sanitizeHTML.SanitizeHTMLLoggerConfiguration;
 import com.myenterprise.rest.v1.configuration.ConfigurationPropertiesReader;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,9 +55,9 @@ import static com.myenterprise.rest.annotation.sanitizeHTML.SanitizePolicy.CKEDI
 //@ControllerAdvice
 public class SanitizeHTMLRequestBody { //implements RequestBodyAdvice {
 
-    private final SanitizeHTMLListener sanitizeHTMLListener = new SanitizeHTMLListener();
+    //private final SanitizeHTMLListener sanitizeHTMLListener = new SanitizeHTMLListener();
 
-    private final SanitizeHTMLLoggerConfiguration sanitizeHTMLLoggerConfiguration;
+    //private final SanitizeHTMLLoggerConfiguration sanitizeHTMLLoggerConfiguration;
 
     /**
      * Getter method of the current property being inspected.
@@ -104,7 +102,7 @@ public class SanitizeHTMLRequestBody { //implements RequestBodyAdvice {
      */
     @Autowired
     public SanitizeHTMLRequestBody(ConfigurationPropertiesReader propertiesConfiguration) {
-        this.sanitizeHTMLLoggerConfiguration = new SanitizeHTMLLoggerConfiguration(propertiesConfiguration);
+        //this.sanitizeHTMLLoggerConfiguration = new SanitizeHTMLLoggerConfiguration(propertiesConfiguration);
     }
 
     /**
@@ -152,7 +150,7 @@ public class SanitizeHTMLRequestBody { //implements RequestBodyAdvice {
 
         String originalValue = (String) this.getter.invoke(this.body);
 
-        this.sanitizeHTMLLoggerConfiguration
+        /*this.sanitizeHTMLLoggerConfiguration
                 .setFieldName(this.field.getName())
                 .setModelClassName(this.argumentClass.getName())
                 .setControllerClassName(this.signature.getDeclaringClass().getName())
@@ -167,7 +165,7 @@ public class SanitizeHTMLRequestBody { //implements RequestBodyAdvice {
         );
 
         this.sanitizeHTMLListener.register();
-        this.setter.invoke(this.body, sanitizedValue);
+        this.setter.invoke(this.body, sanitizedValue);*/
     }
 
     /**
