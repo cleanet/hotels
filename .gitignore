@@ -2,6 +2,8 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+src/test/resources/*
+src/test/java/com/myenterprise/rest/dto/*.java
 
 ### STS ###
 .apt_generated

@@ -1,7 +1,7 @@
 /*
  *   MIT License
  *
- *  Copyright (c) 2025 cleanet
+ *  Copyright (c) 2026 cleanet
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,10 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
-package com.myenterprise.rest.annotation.sanitizeHTML;
+package com.myenterprise.rest.annotation.sanitizehtml;
 
 import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.lang.annotation.*;
@@ -37,7 +38,8 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 @JacksonAnnotationsInside
-@JsonSerialize(using = SanitizeHTMLSerializer.class)
+@JsonSerialize(using = SanitizeHtmlResponse.class)
+@JsonDeserialize(using = SanitizeHtmlRequestBody.class)
 @Documented
-public @interface SanitizeHTML {
+public @interface SanitizeHtml {
 }
