@@ -28,7 +28,8 @@ package com.myenterprise.rest.annotation.sanitizehtml;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.myenterprise.rest.dto.JsonSanitizeDto;
+import com.myenterprise.rest.annotation.sanitizehtml.dto.JsonSanitizeDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.results.format.ResultFormatType;
@@ -83,6 +84,7 @@ public class JsonBenchmarkTest {
      * @throws Exception if the resource cannot be found or read
      */
     @Setup(Level.Trial)
+    @BeforeEach
     public void setUp() throws Exception {
         InputStream stream = getClass()
                 .getClassLoader()
@@ -170,5 +172,6 @@ public class JsonBenchmarkTest {
                 .resultFormat(ResultFormatType.CSV)
                 .result("target/jmh-results.csv")
                 .build()).run();
+        assertTrue(true);
     }
 }

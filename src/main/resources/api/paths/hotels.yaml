@@ -2,6 +2,16 @@ get:
   operationId: getHotels
   summary: Get all hotels
   tags: [Hotels]
+  parameters:
+    - name: filters
+      in: query
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.validatersql.ValidateRsql(
+        depth=10,
+        maxOperators=10
+      )'
+      schema:
+        type: string
+
   responses:
     '200':
       description: Get all hotels

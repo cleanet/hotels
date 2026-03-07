@@ -16,13 +16,13 @@ spring:
     cache-names:
       - rate-limit-buckets
 
-logging:
-  sanitizerHTML:
-    message: "The field value '{fieldName}' in '{modelClassName}' model, of controller method '{controllerClassName}.{controllerMethodName}()' was sanitized. The elements '{rejectedTags}' and attributes '{rejectedAttributes}' was rejected preventing XSS Attack"
-cors:
-  allowed-origins: 'http://localhost:8080'
-  allowed-headers: '*'
-  allowed-mapping: '/**'
+management:
+  endpoints:
+    web:
+      cors:
+        allowed-origins: "http://localhost:8080"
+        allowed-methods: "*"
+        path-pattern: "/**"
 
 bucket4j:
   enabled: true

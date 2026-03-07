@@ -28,7 +28,7 @@ package com.myenterprise.rest.annotation.sanitizehtml;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.myenterprise.rest.dto.JsonSanitizeDto;
+import com.myenterprise.rest.annotation.sanitizehtml.dto.JsonSanitizeDto;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;

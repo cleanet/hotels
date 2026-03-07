@@ -23,6 +23,7 @@
  */
 package com.myenterprise.rest.v1.service;
 
+import com.myenterprise.rest.rsql.CustomRsqlVisitor;
 import com.myenterprise.rest.utils.ResponseUtils;
 import com.myenterprise.rest.v1.entity.FacilityEntity;
 import com.myenterprise.rest.v1.entity.HotelsEntity;
@@ -31,15 +32,16 @@ import com.myenterprise.rest.v1.mapper.HotelMapper;
 import com.myenterprise.rest.v1.model.Hotel;
 import com.myenterprise.rest.v1.model.HotelInput;
 import com.myenterprise.rest.v1.repository.HotelsRepository;
+import cz.jirutka.rsql.parser.RSQLParser;
+import cz.jirutka.rsql.parser.ast.Node;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.StreamSupport;
 
 /**
  * Service class for managing hotel-related business logic.
@@ -60,6 +62,9 @@ public class HotelsService {
     private final HotelMapper hotelMapper;
 
     private final FacilityMapper facilityMapper;
+
+    private static final String HOTEL_NOT_FOUND  = "Hotel not found";
+    private static final String ERROR_UNEXPECTED = "error unexpected";
 
     /**
      * Constructs the {@code HotelsService} with a {@code HotelsRepository} dependency.
@@ -83,7 +88,7 @@ public class HotelsService {
      */
     public ResponseEntity<Hotel> update( UUID id, HotelInput hotelInput ){
         try{
-            if (hotelsRepository.findById(id).isEmpty()) return ResponseUtils.notFoundResponse();
+            if (hotelsRepository.findById(id).isEmpty()) return ResponseUtils.notFoundResponse(HOTEL_NOT_FOUND);
             HotelsEntity hotel = hotelsRepository.findById(id).orElseThrow();
             hotel.setName(hotelInput.getName());
             hotel.setDescription(hotelInput.getDescription());
@@ -102,7 +107,7 @@ public class HotelsService {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch ( Exception error ){
             error.printStackTrace();
-            return ResponseUtils.internalErrorResponse();
+            return ResponseUtils.internalErrorResponse(ERROR_UNEXPECTED);
         }
     }
 
@@ -115,30 +120,54 @@ public class HotelsService {
      */
     public ResponseEntity<Hotel> find( UUID id ){
         try{
-            if (hotelsRepository.findById(id).isEmpty()) return ResponseUtils.notFoundResponse();
+            if (hotelsRepository.findById(id).isEmpty()) return ResponseUtils.notFoundResponse(HOTEL_NOT_FOUND);
             Hotel hotel = hotelMapper.toModel(hotelsRepository.findById(id).get());
             return new ResponseEntity<>(hotel, HttpStatus.OK);
         } catch ( Exception error ){
             error.printStackTrace();
-            return ResponseUtils.internalErrorResponse();
+            return ResponseUtils.internalErrorResponse(ERROR_UNEXPECTED);
         }
     }
 
     /**
-     * Retrieves a list of all hotels.
+     * Retrieves a collection of all hotels stored in the system.
      *
-     * @return A {@link ResponseEntity} with a list of all {@link Hotel} objects and an HTTP 200 (OK) status if successful,
-     * or an internal error response if the operation fails.
+     * <p>This method optionally accepts an RSQL filter string. If a filter is supplied,
+     * it is parsed into a {@link Specification} which is then used to query the
+     * {@code hotelsRepository}. When {@code filters} is {@code null}, the method simply
+     * returns every {@link HotelsEntity} persisted in the database.</p>
+     *
+     * <p>The resulting {@link HotelsEntity} objects are converted to the public
+     * {@link Hotel} model via {@code hotelMapper} before being wrapped in a
+     * {@link ResponseEntity} with an HTTP 200 (OK) status.</p>
+     *
+     * <p>If any exception occurs during processing (for example, a parsing error
+     * or a database failure), the stack trace is printed and a generic internal‑error
+     * response is returned using {@link ResponseUtils#internalErrorResponse()}.</p>
+     *
+     * @param filters an optional RSQL expression used to filter the results; may be
+     *                {@code null} to retrieve all records.
+     * @return a {@link ResponseEntity} containing a {@link List} of {@link Hotel}
+     *         objects and an HTTP 200 status when successful, or an internal‑error
+     *         response if an exception is thrown.
      */
-    public ResponseEntity<List<Hotel>> findAll(){
+    public ResponseEntity<List<Hotel>> findAll(String filters) {
         try {
-            List<HotelsEntity> hotels = StreamSupport
-                    .stream(hotelsRepository.findAll().spliterator(), false)
-                    .toList();
+            List<HotelsEntity> hotels;
+            if (filters != null) {
+                Node rootNode = new RSQLParser().parse(filters);
+                Specification<HotelsEntity> specification =
+                        rootNode.accept(new CustomRsqlVisitor<>());
+                hotels = hotelsRepository.findAll(specification).stream()
+                        .toList();
+            } else {
+                hotels = hotelsRepository.findAll().stream()
+                        .toList();
+            }
             return new ResponseEntity<>(hotelMapper.toModel(hotels), HttpStatus.OK);
-        } catch ( Exception error ){
+        } catch (Exception error) {
             error.printStackTrace();
-            return ResponseUtils.internalErrorResponse();
+            return ResponseUtils.internalErrorResponse(ERROR_UNEXPECTED);
         }
     }
 
@@ -151,12 +180,12 @@ public class HotelsService {
      */
     public ResponseEntity<Void> remove(@NotNull UUID id){
         try{
-            if (hotelsRepository.findById(id).isEmpty()) return ResponseUtils.notFoundResponse();
+            if (hotelsRepository.findById(id).isEmpty()) return ResponseUtils.notFoundResponse(HOTEL_NOT_FOUND);
             hotelsRepository.deleteById(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch ( Exception error ){
             error.printStackTrace();
-            return ResponseUtils.internalErrorResponse();
+            return ResponseUtils.internalErrorResponse(ERROR_UNEXPECTED);
         }
     }
 
@@ -170,15 +199,13 @@ public class HotelsService {
     public ResponseEntity<Hotel> save(@NotNull HotelInput hotelInput){
         try{
             HotelsEntity hotel = hotelMapper.toEntity(hotelInput);
-            hotel.getFacilities().forEach(facility -> {
-                facility.setHotel(hotel);
-            });
+            hotel.getFacilities().forEach(facility -> facility.setHotel(hotel));
             HotelsEntity hotelSaved = hotelsRepository.save(hotel);
             Hotel response = hotelMapper.toModel(hotelSaved);
             return new ResponseEntity<>(response,HttpStatus.CREATED);
         } catch ( Exception error ){
             error.printStackTrace();
-            return ResponseUtils.internalErrorResponse();
+            return ResponseUtils.internalErrorResponse(ERROR_UNEXPECTED);
         }
     }
 }

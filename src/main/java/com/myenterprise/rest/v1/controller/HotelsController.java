@@ -71,8 +71,8 @@ public class HotelsController implements HotelsApiDelegate {
      * and an appropriate HTTP status.
      */
     @Override
-    public ResponseEntity<List<Hotel>> getHotels() {
-        return hotelsService.findAll();
+    public ResponseEntity<List<Hotel>> getHotels( String filters ) {
+        return hotelsService.findAll( filters );
     }
 
     /**
@@ -95,7 +95,7 @@ public class HotelsController implements HotelsApiDelegate {
      * if found, or an HTTP 404 (Not Found) status if it does not exist.
      */
     @Override
-    public ResponseEntity<Hotel> getHotel(UUID id) {
+    public ResponseEntity<Hotel> getHotel(UUID id, String filters) {
         return hotelsService.find(id);
     }
 

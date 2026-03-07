@@ -23,8 +23,8 @@
  */
 package com.myenterprise.rest.v1.configuration;
 
+import com.myenterprise.rest.annotation.validatersql.ValidateRsqlHandlerInterceptor;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,7 +36,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import com.myenterprise.rest.v1.configuration.filters.BearerTokenAuthFilter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -54,21 +54,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableCaching
 public class SecurityConfiguration implements WebMvcConfigurer {
 
-    /**
-     * Reader for application configuration properties.
-     * This field is used to access values for CORS configuration.
-     */
-    private final ConfigurationPropertiesReader configurationPropertiesReader;
-
-    /**
-     * Constructs the SecurityConfiguration with a ConfigurationPropertiesReader.
-     * Spring will automatically inject the required dependency.
-     *
-     * @param configurationPropertiesReader The {@link ConfigurationPropertiesReader} instance.
-     */
-    @Autowired
-    public SecurityConfiguration( ConfigurationPropertiesReader configurationPropertiesReader ){
-        this.configurationPropertiesReader = configurationPropertiesReader;
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new ValidateRsqlHandlerInterceptor());
     }
 
     /**
@@ -111,21 +99,5 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                 )
                 .addFilterBefore(bearerTokenAuthFilter, LogoutFilter.class);
         return http.build();
-    }
-
-    /**
-     * Configures Cross-Origin Resource Sharing (CORS) for the application.
-     * It allows specific origins, headers, and HTTP methods for certain URL mappings.
-     * The values are read from the application's configuration properties.
-     *
-     * @param registry The {@link CorsRegistry} to which CORS mappings are added.
-     */
-    @Override
-    public void addCorsMappings(@NotNull CorsRegistry registry) {
-        registry
-                .addMapping(configurationPropertiesReader.mapping)
-                .allowedOrigins(configurationPropertiesReader.origins)
-                .allowedHeaders(configurationPropertiesReader.headers)
-                .exposedHeaders(configurationPropertiesReader.headers);
     }
 }
