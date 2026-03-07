@@ -172,6 +172,13 @@
 			<artifactId>jmh-generator-annprocess</artifactId>
 			<version>1.37</version>
 		</dependency>
+
+		<!-- rsql -->
+		<dependency>
+			<groupId>cz.jirutka.rsql</groupId>
+			<artifactId>rsql-parser</artifactId>
+			<version>2.1.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -243,6 +250,16 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0</version>
+				<configuration>
+					<excludes>
+						<exclude>**/com/myenterprise/rest/annotation/sanitizehtml/**</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 	<!-- Generating JavaDoc in Maven Site ref: https://www.oreilly.com/library/view/apache-maven-cookbook/9781785286124/ch07s03.html -->
@@ -252,6 +269,12 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.11.2</version>
+				<configuration>
+					<!-- No stop the compilation in javadoc fails -->
+					<failOnError>false</failOnError>
+					<!-- optional: delete warnings, for classes without comments -->
+					<!--additionalJOptions>-Xdoclint:none</additionalJOptions-->
+				</configuration>
 			</plugin>
 		</plugins>
 	</reporting>

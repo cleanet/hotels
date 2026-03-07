@@ -24,19 +24,40 @@
 package com.myenterprise.rest.v1.repository;
 
 import com.myenterprise.rest.v1.entity.HotelsEntity;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link HotelsEntity} instances.
- * <p>
- * This interface extends {@link CrudRepository} to provide basic CRUD (Create, Read, Update, Delete)
- * operations for the {@link HotelsEntity} class. The primary key for this entity is of type {@link UUID}.
- * Spring Data JPA automatically provides an implementation of this interface at runtime.
- * </p>
+ * Spring Data repository for {@link HotelsEntity}.
+ *
+ * <p>This interface extends several Spring Data interfaces to provide a rich
+ * set of data‑access operations:</p>
+ *
+ * <ul>
+ *   <li>{@link JpaRepository} – offers standard CRUD methods plus pagination
+ *       and sorting capabilities.</li>
+ *   <li>{@link JpaSpecificationExecutor} – enables the construction of dynamic
+ *       queries using the {@code Specification} API.</li>
+ * </ul>
+ *
+ * <p>The primary key type for {@link HotelsEntity} is {@link UUID}, which means
+ * all generated queries will expect a {@code UUID} value when locating a specific
+ * hotel record.</p>
+ *
+ * <p>Spring Data JPA will automatically generate an implementation of this
+ * repository at runtime, so developers can simply inject {@code HotelsRepository}
+ * wherever they need to interact with the underlying database.</p>
+ *
  */
 @Repository
-public interface HotelsRepository extends CrudRepository<HotelsEntity, UUID> {
+public interface HotelsRepository extends
+        JpaRepository<HotelsEntity, UUID>,
+        JpaSpecificationExecutor<HotelsEntity> {
+
+    // No additional methods are required at this stage.
+    // Custom query methods can be added here later if needed,
+    // following Spring Data naming conventions.
 }

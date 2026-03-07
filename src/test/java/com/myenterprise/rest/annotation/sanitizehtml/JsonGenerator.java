@@ -25,7 +25,7 @@
  */
 package com.myenterprise.rest.annotation.sanitizehtml;
 
-import com.myenterprise.rest.dto.JsonDto;
+import com.myenterprise.rest.annotation.sanitizehtml.dto.JsonDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;

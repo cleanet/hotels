@@ -23,12 +23,16 @@
  */
 package com.myenterprise.rest.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myenterprise.rest.v1.model.Error;
+import jakarta.servlet.http.HttpServletResponse;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 /**
  * Utility class for creating standardized HTTP responses.
@@ -46,6 +50,24 @@ public class ResponseUtils {
     @Autowired
     private ResponseUtils(){}
 
+
+    public static void writeErrorResponse(HttpServletResponse resp,
+                                             String message,
+                                             int httpStatus,
+                                             String internalCode) throws IOException {
+        com.myenterprise.rest.v1.model.Error err = new com.myenterprise.rest.v1.model.Error();
+        err.setError(internalCode);
+        err.setMessage(message);
+
+        ResponseEntity<Object> entity = ResponseUtils.errorResponse(err, org.springframework.http.HttpStatus.valueOf(httpStatus));
+
+        resp.setStatus(httpStatus);
+        resp.setContentType("application/json");
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.writeValue(resp.getOutputStream(), entity.getBody());
+    }
+
     /**
      * Creates a standardized 404 Not Found response entity.
      * This method is specifically designed for cases where a requested hotel is not found.
@@ -54,10 +76,10 @@ public class ResponseUtils {
      * @return A {@link ResponseEntity} with an error body and {@link HttpStatus#NOT_FOUND}.
      */
     @NotNull
-    public static <T> ResponseEntity<T> notFoundResponse(){
+    public static <T> ResponseEntity<T> notFoundResponse( String message ){
         Error responseError = new Error();
         responseError.setError("HOTELS-ERROR-00404");
-        responseError.setMessage("Hotel not found");
+        responseError.setMessage(message);
         return ResponseUtils.errorResponse(responseError, HttpStatus.NOT_FOUND);
     }
 
@@ -69,10 +91,10 @@ public class ResponseUtils {
      * @return A {@link ResponseEntity} with an error body and {@link HttpStatus#INTERNAL_SERVER_ERROR}.
      */
     @NotNull
-    public static <T> ResponseEntity<T> internalErrorResponse(){
+    public static <T> ResponseEntity<T> internalErrorResponse( String message ){
         Error responseError = new Error();
         responseError.setError("HOTELS-ERROR-00500");
-        responseError.setMessage("Unexpected error");
+        responseError.setMessage(message);
         return ResponseUtils.errorResponse(responseError, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

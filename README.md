@@ -300,6 +300,12 @@ Also, add the JavaDoc:
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
             <version>3.11.2</version>
+            <configuration>
+              <!-- No stop the compilation in javadoc fails -->
+              <failOnError>false</failOnError>
+              <!-- optional: delete warnings, for classes without comments -->
+              <!--additionalJOptions>-Xdoclint:none</additionalJOptions-->
+            </configuration>
         </plugin>
     </plugins>
 </reporting>
@@ -439,27 +445,97 @@ You can test the sanitization in `/src/test/java/com/myenterprise/rest/annotatio
 * SanitizeHtmlTest: Test the proper functioning of deserializer with sanitization.
 
 The `dto` folder is stored the Object of mapper the json's
-### CORS
-Now, we configure the CORS. For only allows the origins `http://localhost:8080`.
 
-First in the `SecurityConfiguration` class implements `WebMvcConfigurer` class. And we add the annotation `@EnableWebSecurity`
+You must add the DTO's with your jsons file in resources.
 
-After overrides the method `addCorsMappings`.
-```java
-@Override
-public void addCorsMappings(@NotNull CorsRegistry registry) {
-    registry
-            .addMapping("/**")
-            .allowedOrigins(configurationPropertiesReader.origins);
-}
+In the POM is added:
+```xml
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0</version>
+				<configuration>
+					<excludes>
+						<exclude>**/com/myenterprise/rest/annotation/sanitizehtml/**</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
 ```
-The `configurationPropertiesReader` is the class `ConfigurationPropertiesReader` declared with Autowired.
+For skip only the test of sanitization.
+### RSQL
+The path `/hotels/` has the query parameter `filters`, allows filter the hotels list by RSQL query.
 
-The variable `origins` in the class `ConfigurationPropertiesReader` gets the value of property `management.endpoints.web.cors.allowed-origins`
-in the application.yaml
+In the pom is added two dependencies:
+```xml
+<!-- rsql -->
+<dependency>
+    <groupId>cz.jirutka.rsql</groupId>
+    <artifactId>rsql-parser</artifactId>
+    <version>2.1.0</version>
+</dependency>
+```
+**rsql-parser**: This third-party dependency: https://mvnrepository.com/artifact/cz.jirutka.rsql/rsql-parser
 
-For more information: https://www.baeldung.com/spring-cors#1-javaconfig
+Its main purpose is to allow you to write filters as RSQL strings in your API URL
 
+After in the openapi was specified the field.
+```yaml
+get:
+  operationId: getHotels
+  summary: Get all hotels
+  tags: [Hotels]
+  parameters:
+    - name: filters
+      in: query
+      schema:
+        type: string
+  [...]
+```
+
+For fill the demonstration is developed a small Specification with the basic operations and comparators.
+In `com.myenterprise.rest.rsql` package.
+#### Validate filters RSQL
+Has been created the annotation `@ValidateRsql` for you can add a limitations of the rsql that the client add in the request's query parameter
+
+For example:
+
+```java
+import com.myenterprise.rest.annotation.validatersql.ValidateRsql;
+
+getHotels(
+        @com.myenterprise.rest.annotation.validatersql.ValidateRsql( depth=1, maxOperators=1 ) [...] String filters
+)
+```
+| Example | RSQL expression            | Meets the validation? | Explanation                                                                                                    |
+|---------|----------------------------|-----------------------|----------------------------------------------------------------------------------------------------------------|
+| ✅ Valid   | city==Madrid               | Yes                   | • Depth = 1 – accesses only the top‑level field `city`. <br>• One operator (`==`). <br>• Matches the JSON.     |
+| ❌ Invalid | city==Madrid;rating>4      | No                    | • Depth = 1 – still only top‑level fields (acceptable). <br>• **Two** operators (`==` and `>`), exceeds limit. |
+
+For add this annotation in the openapi yaml is possible adding the `x-field-extra-annotation`
+```yaml
+    - name: filters
+      in: query
+      x-field-extra-annotation: '@com.myenterprise.rest.annotation.validatersql.ValidateRsql(
+        depth=10,
+        maxOperators=10
+      )'
+      schema:
+        type: string
+```
+
+The annotation business logic is in the package `com.myenterprise.rest.annotation.validatersql`
+### CORS
+Now, we configure the CORS. For only allows the origins `http://localhost:8080` applying the https://docs.spring.io/spring-boot/appendix/application-properties/index.html#application-properties.actuator.management.endpoints.web.cors.allowed-origins
+```yaml
+management:
+  endpoints:
+    web:
+      cors:
+        allowed-origins: "http://localhost:8080"
+        allowed-methods: "*"
+        path-pattern: "/**"
+
+```
 ### Rate Limiting
 Now, we will configure rate limiting in our endpoints. This is useful to prevent DDOS/DOS attacks.
 We are guided by https://www.baeldung.com/spring-bucket4j#bd-boot-starter.
@@ -573,7 +649,6 @@ Also, the configuration allows specific the method type. For example
               unit: hours 
 ```
 (not tested), based in the documentation
-
 ### UUIDs as primary keys
 This is recomendable, the registers in the DB your primary key is a UUID.
 

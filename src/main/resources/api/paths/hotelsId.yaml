@@ -9,6 +9,10 @@ get:
       schema:
         type: string
         format: uuid
+    - name: filters
+      in: query
+      schema:
+        type: string
   responses:
     '200':
       description: Hotel details
