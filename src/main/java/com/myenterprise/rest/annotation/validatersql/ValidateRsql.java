@@ -43,7 +43,7 @@ import java.lang.annotation.*;
  * public ResponseEntity<?> getItems(
  *     @ValidateRsql(depth = 3, maxOperators = 10,
  *                   allowOperators = {Operators.EQUAL, Operators.GREATER_THAN},
- *                   allowComparators = {LogicalOperator.AND})
+ *                   allowLogicalOperators = {LogicalOperator.AND})
  *     @RequestParam("filter") String filter) {
  *     …
  * }
@@ -101,7 +101,7 @@ public @interface ValidateRsql {
      *
      * @return an array of allowed {@link LogicalOperator}s.
      */
-    LogicalOperator[] allowComparators() default {
+    LogicalOperator[] allowLogicalOperators() default {
             LogicalOperator.AND,
             LogicalOperator.OR
     };

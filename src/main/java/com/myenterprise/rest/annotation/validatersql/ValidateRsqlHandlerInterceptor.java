@@ -99,7 +99,7 @@ public class ValidateRsqlHandlerInterceptor implements HandlerInterceptor {
                         response,
                         "Invalid configuration: unable to resolve query‑param name for @ValidateRsql parameter.",
                         HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                        "HOTELS-ERROR-50001");
+                        "HOTELS-ERROR-00500");
                 return false;
             }
 
@@ -116,14 +116,14 @@ public class ValidateRsqlHandlerInterceptor implements HandlerInterceptor {
                         response,
                         error.getMessage(),
                         HttpServletResponse.SC_BAD_REQUEST,
-                        "HOTELS-ERROR-40002");
+                        "HOTELS-ERROR-00400");
                 return false;
             } catch (Exception error) {
                 ResponseUtils.writeErrorResponse(
                         response,
                         "Unable to parse RSQL expression.",
                         HttpServletResponse.SC_BAD_REQUEST,
-                        "HOTELS-ERROR-40003");
+                        "HOTELS-ERROR-00400");
                 error.printStackTrace();
                 return false;
             }
@@ -188,18 +188,18 @@ public class ValidateRsqlHandlerInterceptor implements HandlerInterceptor {
         int depth = computeDepth(rootNode);
         if (depth > annotation.depth()) {
             throw new IllegalArgumentException(
-                    "Maximum allowed depth is %d but expression depth is %d".formatted(annotation.depth(), depth));
+                    "RSQL: Maximum allowed depth is %d but expression depth is %d".formatted(annotation.depth(), depth));
         }
 
         int operatorCount = countOperators(rootNode);
         if (operatorCount > annotation.maxOperators()) {
             throw new IllegalArgumentException(
-                    "Maximum allowed operators is %d but expression contains %d".formatted(annotation.maxOperators(), operatorCount));
+                    "RSQL: Maximum allowed operators is %d but expression contains %d".formatted(annotation.maxOperators(), operatorCount));
         }
 
         validateAllowedOperators(rootNode, annotation.allowOperators());
 
-        validateAllowedLogicalOperators(rootNode, annotation.allowComparators());
+        validateAllowedLogicalOperators(rootNode, annotation.allowLogicalOperators());
 
         if (annotation.validateFields()) {
             validateFields(rootNode, annotation.fields());
@@ -260,7 +260,7 @@ public class ValidateRsqlHandlerInterceptor implements HandlerInterceptor {
             String operatorSymbol = comparisonNode.getOperator().getSymbol();
             Operators operatorEnum = mapSymbolToOperator(operatorSymbol);
             if (!allowedSet.contains(operatorEnum)) {
-                throw new IllegalArgumentException("Operator not allowed: " + operatorSymbol);
+                throw new IllegalArgumentException("RSQL: Operator not allowed: " + operatorSymbol);
             }
         } else if (node instanceof LogicalNode logicalNode) {
             for (var child : logicalNode.getChildren()) {
@@ -287,7 +287,7 @@ public class ValidateRsqlHandlerInterceptor implements HandlerInterceptor {
             case "<=", "=le=" -> Operators.LESS_THAN_OR_EQUAL;
             case "=in=" -> Operators.IN;
             case "=out=" -> Operators.NOT_IN;
-            default -> throw new IllegalArgumentException("Operator unknown: " + symbol);
+            default -> throw new IllegalArgumentException("RSQL: Operator unknown: " + symbol);
         };
     }
 
@@ -306,7 +306,7 @@ public class ValidateRsqlHandlerInterceptor implements HandlerInterceptor {
 
         if (node instanceof LogicalNode logicalNode) {
             if (!allowedSet.contains(logicalNode.getOperator())) {
-                throw new IllegalArgumentException("logic operator not allowed: " + logicalNode.getOperator());
+                throw new IllegalArgumentException("RSQL: logic operator not allowed: " + logicalNode.getOperator());
             }
             for (var child : logicalNode.getChildren()) {
                 validateAllowedLogicalOperators(child, allowed);
@@ -327,7 +327,7 @@ public class ValidateRsqlHandlerInterceptor implements HandlerInterceptor {
         if (node instanceof ComparisonNode comparisonNode) {
             String selector = comparisonNode.getSelector();
             if (!allowedSet.contains(selector)) {
-                throw new IllegalArgumentException("Field not allowed: " + selector);
+                throw new IllegalArgumentException("RSQL: Field not allowed: " + selector);
             }
         } else if (node instanceof LogicalNode ln) {
             for (var child : ln.getChildren()) {

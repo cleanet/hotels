@@ -500,16 +500,58 @@ Has been created the annotation `@ValidateRsql` for you can add a limitations of
 For example:
 
 ```java
-import com.myenterprise.rest.annotation.validatersql.ValidateRsql;
-
-getHotels(
-        @com.myenterprise.rest.annotation.validatersql.ValidateRsql( depth=1, maxOperators=1 ) [...] String filters
-)
+public ResponseEntity<?> getItems(
+    @com.myenterprise.rest.annotation.validatersql.ValidateRsql(depth = 3, maxOperators = 10,
+                    allowOperators = {Operators.EQUAL, Operators.GREATER_THAN},
+                    allowLogicalOperators = {LogicalOperator.AND},
+                    validateFields = true,
+                    fields = { name, description }
+                 )
+    @RequestParam("filter") String filter) {...}
 ```
-| Example | RSQL expression            | Meets the validation? | Explanation                                                                                                    |
-|---------|----------------------------|-----------------------|----------------------------------------------------------------------------------------------------------------|
-| ✅ Valid   | city==Madrid               | Yes                   | • Depth = 1 – accesses only the top‑level field `city`. <br>• One operator (`==`). <br>• Matches the JSON.     |
-| ❌ Invalid | city==Madrid;rating>4      | No                    | • Depth = 1 – still only top‑level fields (acceptable). <br>• **Two** operators (`==` and `>`), exceeds limit. |
+**Consumer‑side request examples for the updated `@ValidateRsql` configuration**
+### ✅ Valid request
+
+```
+GET http://localhost:8080/api/items?filter=name==Book;description>Guide
+```
+
+_Why it passes:_
+
+- Uses only the allowed operators (`==` and `>`).
+- Logical operator is implicit **AND** (semicolon separator).
+- Both fields (`name`, `description`) are whitelisted.
+- Total operators = 2≤`maxOperators` (10).
+- Nesting depth = 1≤`depth` (3).
+### ❌ Too many operators (exceeds `maxOperators`)
+
+```
+GET http://localhost:8080/api/items?filter=name==A;description>1;name==B;description>2;name==C;description>3;name==D;description>4;name==E;description>5;name==F
+```
+
+### ❌ Disallowed operator (`GREATER_THAN_OR_EQUAL`)
+
+```
+GET http://localhost:8080/api/items?filter=description>=Detailed
+```
+### ❌ Disallowed logical operator (`OR`)
+
+```
+GET http://localhost:8080/api/items?filter=name==Alpha,description>Beta
+```
+### ❌ Field not whitelisted (`price`)
+
+```
+GET http://localhost:8080/api/items?filter=price>100
+```
+### ❌ Nesting depth exceeds limit
+
+```
+GET http://localhost:8080/api/items?filter=(name==X;(description>Y;(name==Z;description>W)))
+```
+
+These examples illustrate how the API consumer can build queries that satisfy the constraints imposed by the `@ValidateRsql` annotation, as well as the typical error messages returned when a rule is violated.
+
 
 For add this annotation in the openapi yaml is possible adding the `x-field-extra-annotation`
 ```yaml
