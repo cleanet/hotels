@@ -20,6 +20,17 @@
           value:
             error: HOTELS-ERROR-00500
             message: Error unexpected
+400Response:
+  description: Bad Request
+  content:
+    application/json:
+      schema:
+        $ref: 'schemas.yaml#/Error'
+      examples:
+        500:
+          value:
+            error: HOTELS-ERROR-00400
+            message: 'RSQL: Maximum allowed depth is 5 but expression depth is 6'
 429Response:
   description: Too many requests
   content:

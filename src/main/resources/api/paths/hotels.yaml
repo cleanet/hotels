@@ -6,8 +6,11 @@ get:
     - name: filters
       in: query
       x-field-extra-annotation: '@com.myenterprise.rest.annotation.validatersql.ValidateRsql(
-        depth=10,
-        maxOperators=10
+        depth=7,
+        maxOperators=10,
+        allowLogicalOperators={
+          cz.jirutka.rsql.parser.ast.LogicalOperator.AND
+        }
       )'
       schema:
         type: string
@@ -25,6 +28,8 @@ get:
       $ref: "../components/responses.yaml#/500Response"
     '429':
       $ref: "../components/responses.yaml#/429Response"
+    '400':
+      $ref: "../components/responses.yaml#/400Response"
 
 post:
   operationId: createHotel

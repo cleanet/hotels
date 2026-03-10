@@ -55,7 +55,7 @@ public class ResponseUtils {
                                              String message,
                                              int httpStatus,
                                              String internalCode) throws IOException {
-        com.myenterprise.rest.v1.model.Error err = new com.myenterprise.rest.v1.model.Error();
+        Error err = new Error();
         err.setError(internalCode);
         err.setMessage(message);
 
